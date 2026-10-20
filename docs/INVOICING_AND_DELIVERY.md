@@ -9,6 +9,9 @@ reaches the customer, and where the money and stock go. The last section lists t
 | Dine-in (table) | At **Settle**, after eating | Cashier | POS Invoice |
 | Delivery by own rider | When **Delivered** | Rider (cash on delivery) → counter | Sales Invoice |
 | Foodpanda | When **Delivered** | Foodpanda (pays the restaurant later) | Sales Invoice to "Foodpanda" |
+| Online — delivery | When **Delivered** | Rider (cash on delivery) → counter | Sales Invoice to the customer |
+| Online — pickup | When **Collected** | Cashier (Receive payment) | Sales Invoice to the customer |
+| Kiosk | At the counter, **before** cooking | Cashier | POS Invoice (from the held kiosk sale) |
 
 Every invoice gets sales tax (Restaurant Settings), the FBR POS fee and an FBR invoice number, printed with its QR code.
 
@@ -121,14 +124,35 @@ To deliver Foodpanda orders with your **own riders** (Foodpanda's restaurant-del
 Foodpanda → *Delivered By* = **Own Rider**. Those orders then follow section 3 (assignment, rider app, tracking), but are
 still invoiced to Foodpanda when delivered.
 
-## 5. Returns and cancellations
+## 5. Online orders (website / app) and the kiosk
+
+**Website / app** (`/ros/order`, can be installed on a phone):
+1. The customer picks dishes (with add-ons such as spice level or extra cheese), then **Delivery** (address + map pin,
+   delivery fee, must be inside the branch's delivery radius) or **Pickup**, and enters name and mobile number. The checkout
+   total is calculated exactly as the invoice will be (tax and delivery fee included).
+2. **Place order** sends it straight to the kitchen (channel *Web*, or *App* from the installed app) and opens the customer's
+   **tracking page**. The customer record is found by mobile number or created, so repeat customers are recognised.
+3. Delivery orders then follow section 3 (rider, cash on delivery, invoice at **Delivered**). Pickup orders are invoiced when
+   the KDS marks them **Completed** (collected); the cashier takes the money with **POS → Receive payment** for that customer.
+
+**Kiosk** (`/ros/kiosk`, a touch screen in the restaurant):
+1. The guest chooses **Eat in / Take away**, dishes and add-ons, and optionally a name, then **Order · pay at counter**.
+2. The order is saved as a **held sale** on the branch counter, labelled *Kiosk K12 · name · Eat in*; the screen shows
+   **K12** big and resets.
+3. The cashier opens **Held** in the POS terminal, takes payment and completes the sale: the POS Invoice, FBR number and
+   receipt are made, and only then does the order go to the KDS (no food is cooked before it is paid).
+
+Add-ons that are items of their own (Extra Cheese, Roti, Paratha) become their own invoice line, so their ingredients are
+deducted too; spice level and other choices travel with the dish as text and show on the KDS.
+
+## 6. Returns and cancellations
 
 - **Counter / dine-in return**: POS → Return invoice (whole or part). The refund goes through the chosen payment mode in the
   current shift and is reported to FBR as a credit invoice.
 - **Cancelling an invoice** cancels its kitchen order and reverses any ingredients already issued.
 - A **delivery cancelled before delivery** is never invoiced.
 
-## 6. Where to see it
+## 7. Where to see it
 
 | Screen | What it shows |
 |---|---|
@@ -138,6 +162,8 @@ still invoiced to Foodpanda when delivered.
 | Dispatch & Riders `/ros/dispatch` | Riders and drop-offs on the map, assignment, phone orders, rider cash |
 | Rider app `/ros/rider` | The rider's offers and deliveries (phone) |
 | Tracking page `/ros/track/<code>` | The customer's view (public link) |
+| Ordering site `/ros/order` | Customers order delivery / pickup (public) |
+| Kiosk `/ros/kiosk` | Self-order screen in the restaurant (public) |
 | POS Invoices / Sales Invoices | All invoices, with their FBR number |
 | Orders | Every Restaurant Order with its invoice, rider and stock status |
 

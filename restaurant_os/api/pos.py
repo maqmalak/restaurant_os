@@ -460,8 +460,9 @@ def submit_invoice(data: str) -> dict:
 @frappe.whitelist()
 def held_invoices(pos_profile: str) -> list:
 	dt = _dt(pos_profile)
-	return frappe.get_all(dt, {"pos_profile": pos_profile, "docstatus": 0, "owner": frappe.session.user, "is_pos": 1},
-						  ["name", "customer_name", "grand_total", "modified", "remarks"], order_by="modified desc", limit=50)
+	return frappe.get_all(dt, filters={"pos_profile": pos_profile, "docstatus": 0, "is_pos": 1},
+						  or_filters={"owner": frappe.session.user, "remarks": ["like", "Kiosk K%"]},   # + self-order kiosk orders
+						  fields=["name", "customer_name", "grand_total", "modified", "remarks"], order_by="modified desc", limit=50)
 
 
 @frappe.whitelist()

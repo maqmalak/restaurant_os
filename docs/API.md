@@ -65,6 +65,11 @@ Rider app (signed-in rider): `me`, `set_duty(on)`, `accept(assignment)`, `reject
 Dispatch (staff): `dispatch(branch?)`, `assign(order, rider)`, `handover(rider, amount?)`, `new_delivery_order(data JSON)`,
 `simulate_delivery_order(branch?)`. Customer (guest, rate-limited): `track(key)`.
 
+## Online ordering & kiosk — `restaurant_os.api.online` (guest, rate-limited)
+
+`menu(branch?)`, `quote(data)`, `place_order(data)` (idempotent on `client_order_uuid`), `kiosk_quote(data)`,
+`kiosk_order(data)` → held POS sale "Kiosk K<n>". Cart lines: `{item_code, qty, modifiers: [{group, name}], notes}`.
+
 ## Owner analytics — `restaurant_os.api.analytics` (managers)
 
 `live(branch?)`, `sales(filters)`, `kitchen(filters)`, `menu_engineering(filters)`, `customers(filters)` — filters JSON:

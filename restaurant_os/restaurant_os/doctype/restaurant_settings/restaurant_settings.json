@@ -55,6 +55,15 @@
   "column_break_c",
   "review_delay_minutes",
   "low_rating_alert",
+  "section_online",
+  "online_ordering_enabled",
+  "online_price_list",
+  "delivery_fee",
+  "delivery_fee_item",
+  "column_break_online",
+  "min_order_amount",
+  "kiosk_enabled",
+  "kiosk_idle_seconds",
   "section_foodpanda",
   "aggregator_mode",
   "foodpanda_delivery_by",
@@ -333,6 +342,61 @@
    "fieldtype": "Int",
    "label": "Alert Manager At Or Below (stars)",
    "default": "2"
+  },
+  {
+   "fieldname": "section_online",
+   "fieldtype": "Section Break",
+   "label": "Online Ordering & Kiosk",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "online_ordering_enabled",
+   "fieldtype": "Check",
+   "label": "Online Ordering Open",
+   "default": "1",
+   "description": "Public ordering site at /ros/order"
+  },
+  {
+   "fieldname": "online_price_list",
+   "fieldtype": "Link",
+   "label": "Online Price List",
+   "options": "Price List",
+   "description": "Blank = the counter's price list"
+  },
+  {
+   "fieldname": "delivery_fee",
+   "fieldtype": "Currency",
+   "label": "Delivery Fee",
+   "default": "150"
+  },
+  {
+   "fieldname": "delivery_fee_item",
+   "fieldtype": "Link",
+   "label": "Delivery Fee Item",
+   "options": "Item"
+  },
+  {
+   "fieldname": "column_break_online",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "min_order_amount",
+   "fieldtype": "Currency",
+   "label": "Minimum Online Order",
+   "default": "500"
+  },
+  {
+   "fieldname": "kiosk_enabled",
+   "fieldtype": "Check",
+   "label": "Self-order Kiosk Open",
+   "default": "1",
+   "description": "Kiosk at /ros/kiosk \u2014 orders wait as held sales on the counter until paid"
+  },
+  {
+   "fieldname": "kiosk_idle_seconds",
+   "fieldtype": "Int",
+   "label": "Kiosk Resets After (seconds idle)",
+   "default": "90"
   },
   {
    "fieldname": "section_foodpanda",

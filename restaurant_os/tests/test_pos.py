@@ -379,3 +379,56 @@ class TestRestaurantPOS(IntegrationTestCase):
 		k = analytics.kitchen()
 		self.assertTrue(any(s.dishes > 0 for s in k["stations"]))
 		self.assertIn("retention_pct", analytics.customers())
+
+	# ---------------------------------------------------------------- online ordering & kiosk
+	def test_online_menu_and_delivery_order(self):
+		from restaurant_os.api import online
+
+		m = online.menu()
+		malai = next(i for i in m["items"] if i.item_code == "Chicken Malai Boti")
+		self.assertTrue(any(g["group"] == "Spice Level" for g in malai.modifiers))
+		self.assertNotIn("Delivery Charge", [i.item_code for i in m["items"]])
+		cart = [{"item_code": "Chicken Malai Boti", "qty": 2, "modifiers": [{"group": "Spice Level", "name": "Hot"}, {"group": "Cheese", "name": "Extra Cheese"}]}]
+		with self.assertRaises(frappe.ValidationError):        # spice level is required
+			online.quote(json.dumps({"order_type": "Pickup", "items": [{"item_code": "Chicken Malai Boti", "qty": 1}]}))
+		q = online.quote(json.dumps({"order_type": "Delivery", "items": cart}))
+		codes = [l["item_code"] for l in q["lines"]]
+		self.assertEqual(codes, ["Chicken Malai Boti", "Extra Cheese", "Delivery Charge"], "add-on item and delivery fee become lines")
+		self.assertGreater(q["tax"], 0)
+		r = online.place_order(json.dumps({"order_type": "Delivery", "items": cart, "customer_name": "Online Test", "phone": "+92 300 1112233",
+										   "address": "House 9, Gulberg", "lat": 31.525, "lng": 74.355, "client_order_uuid": "u-123"}))
+		again = online.place_order(json.dumps({"order_type": "Delivery", "items": cart, "customer_name": "Online Test", "phone": "+92 300 1112233",
+											   "address": "House 9, Gulberg", "client_order_uuid": "u-123"}))
+		self.assertEqual(again["order"], r["order"])
+		o = frappe.get_doc("Restaurant Order", r["order"])
+		self.assertEqual((o.channel, o.order_type, o.delivery_by), ("Web", "Delivery", "Own Rider"))
+		self.assertAlmostEqual(flt(o.cod_amount), q["total"], places=2)
+		self.assertEqual(frappe.db.get_value("Customer", o.customer, "mobile_no"), "+92 300 1112233")
+		dish = next(i for i in o.items if i.item_code == "Chicken Malai Boti")
+		self.assertIn("Spice Level: Hot", dish.modifiers)
+		with self.assertRaises(frappe.ValidationError):        # outside the delivery radius
+			online.place_order(json.dumps({"order_type": "Delivery", "items": cart, "customer_name": "Far", "phone": "+92 300 9998877",
+										   "address": "Islamabad", "lat": 33.68, "lng": 73.04}))
+
+	def test_online_pickup_invoiced_when_collected(self):
+		from restaurant_os.api import online
+		from restaurant_os.api.riders import track
+
+		cart = [{"item_code": "Chicken Karahi", "qty": 1, "modifiers": [{"group": "Spice Level", "name": "Mild"}]}]
+		r = online.place_order(json.dumps({"order_type": "Pickup", "items": cart, "customer_name": "Pickup Test", "phone": "03001234567"}))
+		self.assertEqual(track(r["tracking_key"])["steps"][-1], "Collected")
+		while frappe.db.get_value("Restaurant Order", r["order"], "status") != "Completed":
+			kds.advance(r["order"])
+		inv = frappe.db.get_value("Restaurant Order", r["order"], "invoice")
+		self.assertTrue(inv)
+		self.assertAlmostEqual(flt(frappe.db.get_value("Sales Invoice", inv, "rounded_total")), flt(r["total"]), places=2, msg="quote = invoice")
+
+	def test_kiosk_order_waits_on_the_counter(self):
+		from restaurant_os.api import online
+
+		r = online.kiosk_order(json.dumps({"order_type": "Dine-in", "name": "Ali", "items": [
+			{"item_code": "French Fries", "qty": 1, "modifiers": [{"group": "Cheese", "name": "Extra Cheese"}]}]}))
+		self.assertTrue(r["number"].startswith("K"))
+		held = pos.held_invoices(PROFILE)
+		self.assertTrue(any(h.name == r["invoice"] and h.remarks.startswith("Kiosk K") for h in held), "the cashier sees kiosk orders")
+		self.assertFalse(frappe.db.exists("Restaurant Order", {"invoice": r["invoice"]}), "the kitchen waits for payment")

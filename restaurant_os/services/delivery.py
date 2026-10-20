@@ -26,11 +26,22 @@ def next_status(order):
 
 
 def invoice_for_order(order):
-	"""A submitted Sales Invoice for a delivery / aggregator order (once); linked back to the order."""
+	"""A submitted Sales Invoice for a delivery / aggregator / online order (once); linked back to the order."""
 	if isinstance(order, str):
 		order = frappe.get_doc("Restaurant Order", order)
 	if order.invoice:
 		return order.invoice
+	si = build_sales_invoice(order)
+	si.flags.ignore_permissions = True
+	si.flags.ros_report_fbr = True                            # outside a POS shift, but still a sale FBR must see
+	si.insert()
+	si.submit()
+	order.db_set({"invoice_doctype": "Sales Invoice", "invoice": si.name, "grand_total": si.rounded_total or si.grand_total})
+	return si.name
+
+
+def build_sales_invoice(order):
+	"""The (unsaved) Sales Invoice for an order — also used to quote online orders, so the quote is what gets invoiced."""
 	s = frappe.get_single("Restaurant Settings")
 	branch = frappe.get_cached_doc("Restaurant Branch", order.branch)
 	aggregator = order.channel in AGGREGATORS
@@ -41,12 +52,12 @@ def invoice_for_order(order):
 	if not customer:
 		frappe.throw(_("Set the customer to invoice {0} orders to (Restaurant Settings).").format(order.channel))
 	price_list = "Foodpanda" if aggregator and frappe.db.exists("Price List", "Foodpanda") else \
-		frappe.db.get_single_value("Selling Settings", "selling_price_list") or "Standard Selling"
+		s.online_price_list or frappe.db.get_single_value("Selling Settings", "selling_price_list") or "Standard Selling"
 	si = frappe.new_doc("Sales Invoice")
 	si.update({"company": order.company, "customer": customer, "posting_date": nowdate(), "due_date": nowdate(),
 			   "selling_price_list": price_list, "update_stock": 1, "set_warehouse": branch.kitchen_warehouse,
 			   "cost_center": branch.cost_center, "taxes_and_charges": s.sales_tax_template,
-			   "remarks": f"{order.channel} order #{order.order_no} ({order.name})"
+			   "remarks": f"{order.channel} order #{order.order_no or ''} ({order.name or 'quote'})"
 						  f"{f' · {order.channel} id {order.external_order_id}' if order.external_order_id else ''}"
 						  f"{f' · {order.customer_name}' if order.customer_name and aggregator else ''}"})
 	for r in order.items:
@@ -64,12 +75,7 @@ def invoice_for_order(order):
 		if src:
 			r.rate = r.price_list_rate = flt(src.rate)
 	si.calculate_taxes_and_totals()
-	si.flags.ignore_permissions = True
-	si.flags.ros_report_fbr = True                            # outside a POS shift, but still a sale FBR must see
-	si.insert()
-	si.submit()
-	order.db_set({"invoice_doctype": "Sales Invoice", "invoice": si.name, "grand_total": si.rounded_total or si.grand_total})
-	return si.name
+	return si
 
 
 def invoice_quietly(order_name):

@@ -10,6 +10,8 @@ const POSRoutes = lazy(() => import("@/pages/POS/POSRoutes").then((m) => ({ defa
 const KDSPage = lazy(() => import("@/pages/Kitchen/KDSPage"));
 const RiderPage = lazy(() => import("@/pages/Delivery/RiderPage"));
 const TrackPage = lazy(() => import("@/pages/Delivery/TrackPage"));
+const OrderSitePage = lazy(() => import("@/pages/Online/OrderSitePage"));
+const KioskPage = lazy(() => import("@/pages/Online/KioskPage"));
 const DispatchPage = lazy(() => import("@/pages/Delivery/DispatchPage"));
 const RestaurantRoutes = lazy(() => import("@/pages/Restaurant/RestaurantRoutes").then((m) => ({ default: m.RestaurantRoutes })));
 
@@ -35,6 +37,8 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         {/* public: the customer's tracking link */}
         <Route path="/track/:key" element={<Suspense fallback={<FullPageLoader />}><TrackPage /></Suspense>} />
+        <Route path="/order" element={<Suspense fallback={<FullPageLoader />}><OrderSitePage /></Suspense>} />
+        <Route path="/kiosk" element={<Suspense fallback={<FullPageLoader />}><KioskPage /></Suspense>} />
         <Route path="/rider" element={<RequireAuth><Suspense fallback={<FullPageLoader />}><RiderPage /></Suspense></RequireAuth>} />
         {/* full-screen kitchen display (no sidebar) */}
         <Route path="/kds" element={<RequireAuth><Suspense fallback={<FullPageLoader />}><KDSPage /></Suspense></RequireAuth>} />

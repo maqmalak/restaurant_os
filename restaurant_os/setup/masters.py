@@ -249,6 +249,15 @@ def ensure_settings(branch, accounts):
 				  "run_jobs_inline": 1, "aggregator_mode": "Mock", "messaging_mode": "Mock", "kds_sound": 1})
 	if not frappe.db.sql("select 1 from tabSingles where doctype = 'Restaurant Settings' and field = 'block_sold_out'"):
 		s.block_sold_out = 1                                  # settings from before this option: switch it on
+	if not s.delivery_fee_item:                               # online ordering defaults
+		if not frappe.db.exists("Item", "Delivery Charge"):
+			if not frappe.db.exists("Item Group", "Services"):
+				frappe.get_doc({"doctype": "Item Group", "item_group_name": "Services", "parent_item_group": "All Item Groups"}).insert(ignore_permissions=True)
+			frappe.get_doc({"doctype": "Item", "item_code": "Delivery Charge", "item_name": "Delivery Charge", "item_group": "Services",
+							"stock_uom": "Nos", "is_stock_item": 0, "is_sales_item": 1, "is_purchase_item": 0,
+							"description": "Delivery fee on online / phone orders"}).insert(ignore_permissions=True)
+		s.update({"delivery_fee_item": "Delivery Charge", "delivery_fee": s.delivery_fee or 150, "min_order_amount": s.min_order_amount or 500,
+				  "online_ordering_enabled": 1, "kiosk_enabled": 1, "kiosk_idle_seconds": s.kiosk_idle_seconds or 90})
 	if not s.rider_float_account:
 		s.update({"rider_float_account": accounts["rider"], "avg_rider_speed_kmh": s.avg_rider_speed_kmh or 20,
 				  "foodpanda_delivery_by": s.foodpanda_delivery_by or "Foodpanda Rider"})

@@ -215,20 +215,27 @@ def track(key: str) -> dict:
 	if not name:
 		frappe.throw(_("Order not found."), frappe.DoesNotExistError)
 	o = frappe.get_doc("Restaurant Order", name)
-	status = {"Accepted": "Placed", "Picked Up": "Out for Delivery", "Completed": "Delivered"}.get(o.status, o.status)
+	if o.order_type != "Delivery":
+		steps = ["Placed", "Preparing", "Ready", "Collected"]
+		status = {"Accepted": "Placed", "Completed": "Collected", "Delivered": "Collected"}.get(o.status, o.status)
+	else:
+		steps = STEPS
+		status = {"Accepted": "Placed", "Picked Up": "Out for Delivery", "Completed": "Delivered"}.get(o.status, o.status)
 	pos = svc.rider_position(o) if o.status in svc.ON_ROAD or (o.delivery_by == "Foodpanda Rider" and o.status == "Ready") else None
 	blat, blng = svc.branch_point(o.branch)
 	rider_name = (frappe.db.get_value("Rider", o.rider, "rider_name") if o.rider else None) or o.ext_rider_name
 	rider_phone = (frappe.db.get_value("Rider", o.rider, "phone") if o.rider else None) or o.ext_rider_phone
 	company = frappe.get_cached_value("Restaurant Branch", o.branch, "company")
 	return {
-		"order_no": o.order_no, "status": status, "raw_status": o.status, "steps": STEPS, "step": STEPS.index(status) if status in STEPS else -1,
+		"order_no": o.order_no, "status": status, "raw_status": o.status, "steps": steps, "step": steps.index(status) if status in steps else -1,
+		"order_type": o.order_type,
 		"cancelled": o.status in ("Cancelled", "Rejected"), "restaurant": company, "branch": o.branch,
 		"logo": frappe.get_cached_value("Company", company, "company_logo"),
 		"branch_point": {"lat": blat, "lng": blng}, "drop": {"lat": o.delivery_lat, "lng": o.delivery_lng, "address": o.delivery_address},
 		"rider": {"name": rider_name, "phone": rider_phone if o.status in svc.ON_ROAD else None,
 				  "lat": pos[0] if pos else None, "lng": pos[1] if pos else None, "by": o.delivery_by},
 		"eta_minutes": svc.eta_minutes(o, pos), "delivery_code": o.delivery_otp if o.status not in ("Delivered", "Completed") else None,
-		"cod_amount": flt(o.cod_amount), "items": [{"item_name": r.item_name, "qty": r.qty} for r in o.items if r.kds_status != "Void"],
+		"cod_amount": flt(o.cod_amount) or (flt(o.grand_total) if o.order_type == "Pickup" and not o.invoice else 0),
+		"items": [{"item_name": r.item_name, "qty": r.qty, "modifiers": r.modifiers} for r in o.items if r.kds_status != "Void"],
 		"placed_at": str(o.placed_at),
 	}

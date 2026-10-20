@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-21 — Phase 6: online ordering & self-order kiosk
+
+- **Ordering site** `/ros/order` (public, installable PWA): menu by category with photos, sold-out locking, add-ons
+  (required / optional, max choices), notes, cart kept on the phone; delivery (address + map pin, "use my location", delivery
+  fee, branch radius check, minimum order) or pickup; cash on delivery / at pickup (online card = coming soon); exact quote =
+  the future invoice; places a Restaurant Order (Web / App) straight to the KDS and opens the tracking page; idempotent.
+- Customers matched by mobile or created; pickup tracking steps (Placed → Preparing → Ready → Collected); pickup orders
+  invoiced when collected.
+- **Kiosk** `/ros/kiosk`: touch-to-start, eat in / take away, big menu and add-ons, live total with offers, order number
+  "K12 — pay at the counter"; saved as a held POS sale the cashier completes (kitchen starts after payment); idle reset.
+- Add-ons with an item (Extra Cheese, Roti) become their own line → their recipe is deducted (modifier recipes, phase 5 gap).
+- Restaurant Settings: online ordering / kiosk switches, online price list, delivery fee + item, minimum order, kiosk idle.
+- Sidebar links can open public pages in a new tab. Tests: 25 backend + Vitest passing.
+
 ## 2026-10-21 — Phase 10: owner dashboard & analytics (+ rider check-in, Connections)
 
 - **Owner dashboard** `/ros/restaurant/dashboard` (live): net sales / orders / avg ticket vs yesterday, food cost %, open and

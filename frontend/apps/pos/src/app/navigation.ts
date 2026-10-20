@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Armchair, BarChart3, Bike, Gauge, Map, Scale, Trash2, Award, BadgePercent, ClipboardList, MonitorPlay, ReceiptText, Banknote, ChefHat, DoorClosed, DoorOpen, LayoutDashboard, LayoutGrid, PackagePlus, Settings2, ShoppingCart,
+  Armchair, BarChart3, Globe, TabletSmartphone, Bike, Gauge, Map, Scale, Trash2, Award, BadgePercent, ClipboardList, MonitorPlay, ReceiptText, Banknote, ChefHat, DoorClosed, DoorOpen, LayoutDashboard, LayoutGrid, PackagePlus, Settings2, ShoppingCart,
   SlidersHorizontal, SlidersVertical, Store, Ticket, UtensilsCrossed, Wallet,
 } from "lucide-react";
 
@@ -10,6 +10,8 @@ export interface NavItem {
   icon?: LucideIcon;
   /** Show only to users with one of these roles (empty = everyone). */
   roles?: string[];
+  /** A full URL opened in a new tab (public pages like the ordering site), not a route inside this app. */
+  external?: boolean;
 }
 
 export interface NavGroup {
@@ -34,6 +36,8 @@ export const POS_NAVIGATION: NavGroup[] = [
       { label: "Table Map", to: "/pos/tables", icon: Armchair },
       { label: "Kitchen Display", to: "/kds", icon: MonitorPlay },
       { label: "Dispatch & Riders", to: "/dispatch", icon: Map },
+      { label: "Online Ordering Site", to: "/ros/order", icon: Globe, external: true },
+      { label: "Self-order Kiosk", to: "/ros/kiosk", icon: TabletSmartphone, external: true },
       { label: "Cash In / Out", to: "/pos/cash", icon: Wallet },
       { label: "Receive Stock", to: "/pos/stock", icon: PackagePlus },
       { label: "POS Invoices", to: "/pos/invoices", icon: ShoppingCart },

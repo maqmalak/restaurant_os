@@ -113,6 +113,10 @@ def advance(order: str, station: str | None = None) -> dict:
 				r.kds_status = "Served"
 		svc.set_status(doc, "Picked Up" if doc.order_type == "Delivery" else "Completed", save=False)
 		doc.save()
+		if doc.status == "Completed" and not doc.invoice and doc.channel in ("Web", "App", "Phone"):
+			from restaurant_os.services.delivery import invoice_quietly
+
+			invoice_quietly(doc.name)                         # pay-at-pickup online order: invoiced when collected
 		return {"status": doc.status}
 	else:
 		from restaurant_os.services import delivery
