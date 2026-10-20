@@ -160,7 +160,8 @@ function Checkout({ menu, cart, setCart, onClose }: { menu: NonNullable<ReturnTy
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-black/50" onClick={onClose}>
       <div className="flex h-full w-full max-w-lg flex-col bg-background" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center border-b border-border px-4 py-3"><h2 className="flex-1 text-lg font-bold">Your order</h2>
+        <div className="flex items-center gap-2 border-b border-border px-4 py-3"><h2 className="flex-1 text-lg font-bold">Your order</h2>
+          {cart.length > 0 && <button onClick={() => setCart(() => [])} className="rounded-lg px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-500/10">Clear cart</button>}
           <button onClick={onClose} className="rounded-full p-2 hover:bg-muted" aria-label="Close"><X className="h-5 w-5" /></button></div>
         <div className="flex-1 space-y-5 overflow-y-auto p-4">
           <div className="divide-y divide-border rounded-2xl border border-border">
