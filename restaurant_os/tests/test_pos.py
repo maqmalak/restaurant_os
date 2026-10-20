@@ -680,3 +680,23 @@ class TestRestaurantPOS(IntegrationTestCase):
 		finally:
 			frappe.set_user("Administrator")
 			frappe.db.rollback(save_point="cashier_tables")
+
+	def test_cashier_closes_own_shift(self):
+		"""POS Awesome grants Sales User nothing on the shift doctypes; restaurant_os adds what a cashier needs."""
+		from restaurant_os.setup.install import shift_permissions
+
+		cashier = "cashier@saffrongrill.example"
+		frappe.db.savepoint("cashier_close")
+		try:
+			shift_permissions()
+			frappe.set_user(cashier)
+			_close_open_shifts_for(cashier)
+			pos.open_shift(PROFILE, OPENING)
+			self.pay([("Chicken Tikka", 1)])
+			counted = {m["mode_of_payment"]: m["expected"] for m in pos.shift_summary()["modes"]}
+			res = pos.close_shift(json.dumps(counted))
+			self.assertTrue(res)
+			self.assertFalse(pos._open_shift(PROFILE), "the cashier's shift is closed")
+		finally:
+			frappe.set_user("Administrator")
+			frappe.db.rollback(save_point="cashier_close")

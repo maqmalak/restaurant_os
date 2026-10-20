@@ -856,10 +856,11 @@ def close_shift(counted: str) -> dict:
 		got = flt(counted.get(mode))
 		closing.append("payment_reconciliation", {"mode_of_payment": mode, "expected_amount": amount, "expected_amount_in_currency": amount,
 												  "closing_amount": got, "closing_amount_in_currency": got, "difference": flt(got - amount, 2)})
+	frappe.db.savepoint("ros_close_shift")                    # undo only the failed close, not the caller's work
 	try:
 		name = submit_closing_shift(json.dumps(closing.as_dict(), default=str))
 	except Exception as e:
-		frappe.db.rollback()
+		frappe.db.rollback(save_point="ros_close_shift")
 		reason = frappe.utils.strip_html(str(e))
 		frappe.log_error(title=f"POS shift close failed: {shift.name}", message=frappe.get_traceback())
 		frappe.throw(_("The shift could not be closed: {0}").format(reason), title=_("Shift not closed"))

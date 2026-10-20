@@ -62,12 +62,32 @@ def track_changes():
 			make_property_setter(dt, None, "track_changes", 1, "Check", for_doctype=True, validate_fields_for_doctype=False)
 
 
+# POS Awesome gives counter staff (Sales User) no rights on its shift doctypes: opening works because POS Awesome skips
+# the check there, but closing does not — cashiers could not close their own shift.
+SHIFT_PERMS = {"POS Opening Shift": ("read", "write", "submit"), "POS Closing Shift": ("read", "write", "create", "submit")}   # submit: updating a submitted doc
+
+
+def shift_permissions():
+	import frappe
+	from frappe.permissions import add_permission, update_permission_property
+
+	for dt, rights in SHIFT_PERMS.items():
+		if not frappe.db.exists("DocType", dt):
+			continue
+		if not frappe.db.exists("Custom DocPerm", {"parent": dt, "role": "Sales User", "permlevel": 0}):
+			add_permission(dt, "Sales User", 0)
+		for right in rights:
+			update_permission_property(dt, "Sales User", 0, right, 1, validate=False)
+
+
 def after_install():
 	custom_fields()
 	track_changes()
+	shift_permissions()
 
 
 def after_migrate():
 	custom_fields()
 	track_changes()
+	shift_permissions()
 	backfill_channels()
