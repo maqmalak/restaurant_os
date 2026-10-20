@@ -31,6 +31,7 @@ _INVOICE_EVENTS = {
 	"on_submit": ["restaurant_os.integrations.tax_authority.fbr.on_submit", "restaurant_os.api.pos.notify_invoice",
 				  "restaurant_os.services.orders.order_from_invoice"],
 	"on_cancel": "restaurant_os.services.orders.cancel_from_invoice",
+	"before_submit": "restaurant_os.services.orders.tag_channel",
 }
 doc_events = {
 	"Sales Invoice": _INVOICE_EVENTS,

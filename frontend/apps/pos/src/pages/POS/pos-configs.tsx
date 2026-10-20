@@ -50,8 +50,10 @@ function invoiceConfig(dt: "POS Invoice" | "Sales Invoice"): DocConfig {
   base: isPI ? "/pos/invoices" : "/pos/sales",
   singular: dt,
   plural: isPI ? "POS Invoices" : "Sales Invoices",
-  subtitle: isPI ? "Counter sales — merged into Sales Invoices when the shift closes (POS Awesome)" : "Counter sales posted as Sales Invoices, and each shift's merged invoice",
-  baseFilters: isPI ? [] : [["is_pos", "=", 1]],
+  subtitle: isPI ? "Counter and table sales — merged into Sales Invoices when the shift closes (POS Awesome)"
+    : "Delivery, web / app, phone and Foodpanda orders (invoiced when delivered / collected) and each shift's merged POS invoice",
+  baseFilters: [],
+  ...(isPI ? {} : { filters: [{ field: "ros_channel", label: "Channel", options: ["POS", "Web", "App", "Phone", "Foodpanda", "Kiosk"] }] }),
   icon: ShoppingCart,
   listHeaderExtra: (
     <Link to="/pos/terminal"
@@ -60,8 +62,9 @@ function invoiceConfig(dt: "POS Invoice" | "Sales Invoice"): DocConfig {
     </Link>
   ),
   submittable: true,
-  listFields: ["name", "customer", "customer_name", "posting_date", "pos_profile", "posa_pos_opening_shift", "grand_total", "paid_amount", "outstanding_amount", "is_return", "status", "docstatus", "modified"],
-  columns: [
+  listFields: ["name", "customer", "customer_name", "posting_date", "pos_profile", "posa_pos_opening_shift", "grand_total", "rounded_total", "paid_amount",
+    "outstanding_amount", "is_return", "status", "docstatus", "modified", ...(isPI ? [] : ["ros_channel", "ros_order"])],
+  columns: isPI ? [
     nameCol("Invoice", (r) => r.customer_name || r.customer),
     dateCol("posting_date", "Date"),
     textCol("pos_profile", "POS Profile"),
@@ -70,8 +73,17 @@ function invoiceConfig(dt: "POS Invoice" | "Sales Invoice"): DocConfig {
     textCol("posa_pos_opening_shift", "Shift"),
     yesNoCol("is_return", "Type", "Return", "Sale"),
     statusCol("status", "Status", "Draft"),
+  ] : [
+    nameCol("Invoice", (r) => r.customer_name || r.customer),
+    dateCol("posting_date", "Date"),
+    textCol("ros_channel", "Channel"),
+    textCol("ros_order", "Order"),
+    moneyCol("rounded_total", "Total"),
+    moneyCol("outstanding_amount", "Still Owed"),
+    yesNoCol("is_return", "Type", "Return", "Sale"),
+    statusCol("status", "Status", "Draft"),
   ],
-  searchFields: ["name", "customer", "customer_name", "posa_pos_opening_shift", "posa_client_request_id"],
+  searchFields: ["name", "customer", "customer_name", "posa_pos_opening_shift", "posa_client_request_id", ...(isPI ? [] : ["ros_order"])],
   statusField: "status",
   statuses: ["Draft", "Paid", "Unpaid", "Partly Paid", "Overdue", "Return", "Credit Note Issued", "Cancelled"],
   dateField: "posting_date",
@@ -122,6 +134,7 @@ function invoiceConfig(dt: "POS Invoice" | "Sales Invoice"): DocConfig {
     tab("More"),
     sec("References"),
     ro(link("posa_pos_opening_shift", "POS Opening Shift", "POS Opening Shift")),
+    ...(isPI ? [] : [ro(data("ros_channel", "Order Channel")), ro(link("ros_order", "Restaurant Order", "Restaurant Order"))]),
     ro(data("posa_client_request_id", "Client Request ID (offline sync)")),
     ro(data("fbr_invoice_number", "FBR Invoice Number")),
     ro(data("fbr_status", "FBR Status")),

@@ -22,8 +22,29 @@ STOCK_ENTRY_FIELDS = [
 ]
 
 
+SALES_INVOICE_FIELDS = [
+	{"fieldname": "ros_channel", "fieldtype": "Select", "label": "Order Channel", "insert_after": "customer_name", "read_only": 1,
+	 "options": "\nPOS\nDine-in\nTakeaway\nPhone\nDrive-thru\nKiosk\nWeb\nApp\nFoodpanda", "in_standard_filter": 1, "in_list_view": 1},
+	{"fieldname": "ros_order", "fieldtype": "Link", "label": "Restaurant Order", "options": "Restaurant Order", "insert_after": "ros_channel",
+	 "read_only": 1, "no_copy": 1},
+]
+
+
+def backfill_channels():
+	"""Invoices made before these fields existed: channel and order from the Restaurant Order that points at them;
+	merged shift invoices (from POS Invoices) are "POS"."""
+	import frappe
+
+	for o in frappe.get_all("Restaurant Order", {"invoice_doctype": "Sales Invoice", "invoice": ["is", "set"]}, ["name", "channel", "invoice"]):
+		frappe.db.set_value("Sales Invoice", o.invoice, {"ros_channel": o.channel, "ros_order": o.name}, update_modified=False)
+	for name in frappe.get_all("Sales Invoice", {"ros_channel": ["in", ["", None]], "docstatus": ["<", 2]},
+							   or_filters={"is_pos": 1, "is_consolidated": 1}, pluck="name"):
+		frappe.db.set_value("Sales Invoice", name, "ros_channel", "POS", update_modified=False)
+
+
 def custom_fields():
-	create_custom_fields({"POS Invoice": FBR_FIELDS, "Sales Invoice": FBR_FIELDS, "Stock Entry": STOCK_ENTRY_FIELDS}, ignore_validate=True, update=True)
+	create_custom_fields({"POS Invoice": FBR_FIELDS, "Sales Invoice": FBR_FIELDS + SALES_INVOICE_FIELDS, "Stock Entry": STOCK_ENTRY_FIELDS},
+						 ignore_validate=True, update=True)
 
 
 def after_install():
@@ -32,3 +53,4 @@ def after_install():
 
 def after_migrate():
 	custom_fields()
+	backfill_channels()

@@ -59,6 +59,7 @@ def build_sales_invoice(order):
 		s.online_price_list or frappe.db.get_single_value("Selling Settings", "selling_price_list") or "Standard Selling"
 	si = frappe.new_doc("Sales Invoice")
 	si.update({"company": order.company, "customer": customer, "posting_date": nowdate(), "due_date": nowdate(),
+			   "ros_channel": order.channel, "ros_order": order.name,
 			   "selling_price_list": price_list, "update_stock": 1, "set_warehouse": branch.kitchen_warehouse,
 			   "cost_center": branch.cost_center, "taxes_and_charges": s.sales_tax_template,
 			   "remarks": f"{order.channel} order #{order.order_no or ''} ({order.name or 'quote'})"

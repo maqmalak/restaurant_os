@@ -114,6 +114,12 @@ def create_order(branch, items, channel="POS", order_type=None, customer=None, c
 	return order
 
 
+def tag_channel(doc, method=None):
+	"""Sales Invoice before_submit: the order channel for the invoice list (counter sales and merged shift invoices = POS)."""
+	if doc.doctype == "Sales Invoice" and not doc.get("ros_channel") and (doc.get("is_pos") or doc.get("is_consolidated")):
+		doc.ros_channel = "POS"
+
+
 def order_from_invoice(doc, method=None):
 	"""POS Invoice / Sales Invoice on_submit: the kitchen order for a counter sale (once per invoice)."""
 	if not (doc.get("is_pos") and doc.get("pos_profile")) or doc.get("is_return") or doc.get("is_consolidated"):
