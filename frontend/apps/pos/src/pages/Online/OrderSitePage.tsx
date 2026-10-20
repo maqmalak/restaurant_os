@@ -21,14 +21,23 @@ export default function OrderSitePage() {
   const [cart, setCart] = useState<CartLine[]>(load);
   const [checkout, setCheckout] = useState(false);
   const sections = useRef<Record<string, HTMLElement | null>>({});
-  useEffect(() => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch { /* private mode */ } }, [cart]);
+  useEffect(() => {                                          // save — unless it's already what's stored (e.g. synced from another tab)
+    try { const v = JSON.stringify(cart); if (localStorage.getItem(CART_KEY) !== v) localStorage.setItem(CART_KEY, v); } catch { /* private mode */ }
+  }, [cart]);
+  useEffect(() => {                                          // other tabs: follow their changes instead of overwriting them
+    const onStorage = (e: StorageEvent) => { if (e.key === CART_KEY) setCart(load()); };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
   useEffect(() => {                                          // installable as an app on phones
     const l = document.createElement("link"); l.rel = "manifest"; l.href = `${import.meta.env.BASE_URL}order/manifest.webmanifest`;
     document.head.appendChild(l); document.title = menu ? `${menu.restaurant} · Order online` : "Order online";
     return () => l.remove();
   }, [menu]);
-  // drop lines whose dish is now sold out or gone
-  useEffect(() => { if (menu) setCart((c) => c.filter((l) => menu.items.some((i) => i.item_code === l.item.item_code && !i.sold_out))); }, [menu]);
+  useEffect(() => {                                          // drop lines whose dish is now sold out or gone — and only then touch the cart
+    if (!menu) return;
+    setCart((c) => { const keep = c.filter((l) => menu.items.some((i) => i.item_code === l.item.item_code && !i.sold_out)); return keep.length === c.length ? c : keep; });
+  }, [menu]);
   const count = cart.reduce((s, l) => s + l.qty, 0);
   const subtotal = cart.reduce((s, l) => s + linePrice(l) * l.qty, 0);
 
