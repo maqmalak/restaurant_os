@@ -27,6 +27,7 @@ import { desktop, loadPrinter, printHtml, printReceipt, PrinterSettingsDialog, r
 import { ApprovalCancelled, useManagerApproval } from "@/components/pos/manager-approval";
 import { openCustomerDisplay, publishDisplay, publishIdle } from "./customer-display-channel";
 import { InvoicesDialog, printUrl, ReceiveDuesDialog, SyncDialog } from "./pos-panels";
+import { toISODate, todayISO } from "@/utils/dates";
 
 interface Profile {
   name: string; company: string; warehouse: string; price_list: string; currency: string; customer: string;
@@ -99,7 +100,7 @@ const initials = (s: string) => s.split(/[\s-]+/).filter(Boolean).slice(0, 2).ma
 const TINTS = ["from-sky-500 to-blue-600", "from-emerald-500 to-teal-600", "from-violet-500 to-indigo-600", "from-amber-500 to-orange-600", "from-rose-500 to-pink-600"];
 const tint = (s: string) => TINTS[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % TINTS.length];
 const hasRules = (r?: string) => !!r && r !== "[]";
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayISO();                     // ERPNext's today (toISOString is UTC: yesterday until 5 am)
 const VIEW_KEY = "pos.view";
 const readView = (): "grid" | "list" => { try { return localStorage.getItem(VIEW_KEY) === "list" ? "list" : "grid"; } catch { return "grid"; } };
 
@@ -1274,7 +1275,7 @@ function PayDialog({ profile, total, payload, draft, money, customer, isWalkIn, 
   const [amounts, setAmounts] = useState<Record<string, number>>(def ? { [def]: total } : {});
   const [points, setPoints] = useState(0);
   const [credit, setCredit] = useState(false);
-  const [dueDate, setDueDate] = useState(() => { const d = new Date(); d.setDate(d.getDate() + 15); return d.toISOString().slice(0, 10); });
+  const [dueDate, setDueDate] = useState(() => { const d = new Date(); d.setDate(d.getDate() + 15); return toISODate(d); });
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ name: string; change_amount?: number; outstanding_amount?: number; write_off_amount?: number; loyalty_amount?: number; print_format: string } | null>(null);
 

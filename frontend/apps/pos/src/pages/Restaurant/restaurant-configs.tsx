@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import type { DocConfig } from "@/components/doc/doc-config";
 import { postCall } from "@/services/frappe";
 import { sec, colBreak, tab, data, int, float, check, text, link, select, req, ro, nameCol, textCol, numCol, yesNoCol, statusCol, currency, percent, dateTimeCol, moneyCol, datetime } from "@/components/doc/doc-helpers";
+import { todayISO } from "@/utils/dates";
 
 /* Restaurant masters (Phase 2): branches, KDS stations, the floor plan, menu modifiers, settings. */
 
@@ -314,7 +315,7 @@ export const WASTAGE_CONFIG: DocConfig = {
     key: "items", label: "Items", doctype: "Wastage Log Item", minRows: 1,
     columns: [req(link("item_code", "Ingredient / Item", "Item")), ro(data("item_name", "Item Name")), req(float("qty", "Qty")), ro(data("uom", "UOM")), ro(currency("amount", "Cost"))],
   }],
-  defaults: () => ({ posting_date: new Date().toISOString().slice(0, 10), reason: "Spoiled", branch: "Gulberg", warehouse: "Gulberg Kitchen - SGR" }),
+  defaults: () => ({ posting_date: todayISO(), reason: "Spoiled", branch: "Gulberg", warehouse: "Gulberg Kitchen - SGR" }),
   titleOf: (v) => (v.name ? `${v.name} · ${v.reason ?? ""}` : "New Wastage Log"),
 };
 

@@ -8,6 +8,7 @@ import { axis, downloadCsv, useViz, type Viz } from "@/components/viz/palette";
 import { formatMoney } from "@/utils/currency";
 import { cn } from "@/utils/cn";
 import { Empty, Panel } from "./OwnerDashboardPage";
+import { toISODate } from "@/utils/dates";
 
 type Tab = "sales" | "kitchen" | "menu" | "customers";
 const TABS: { id: Tab; label: string; icon: typeof BarChart3; report: string }[] = [
@@ -17,7 +18,7 @@ const TABS: { id: Tab; label: string; icon: typeof BarChart3; report: string }[]
   { id: "customers", label: "Customers", icon: Users, report: "Customer Insights" },
 ];
 const GROUPS = ["Channel", "Order Type", "Item", "Item Group", "Hour", "Day Part", "Weekday", "Date", "Cashier", "Branch"];
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+const iso = (d: Date) => toISODate(d);              // local date: toISOString is UTC (yesterday until 5 am here)
 const short = (v: number) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : String(Math.round(v)));
 const n1 = (v?: number | null) => (v == null ? "—" : v.toFixed(1));
 const tip = { background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--popover-foreground))" };

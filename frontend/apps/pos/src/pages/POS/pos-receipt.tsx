@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import qrcode from "qrcode-generator";
 import type { CompanyHeader, ReceiptData } from "./pos-offline";
+import { todayISO } from "@/utils/dates";
 
 /** QR code as an inline SVG (prints crisp on thermal paper; works offline). */
 export function qrSvg(value: string, cellMm = 0.75) {
@@ -236,7 +237,7 @@ export function PrinterSettingsDialog({ onClose }: { onClose: () => void }) {
   }, [app]);
   const set = <K extends keyof PrinterSettings>(k: K, v: PrinterSettings[K]) => setS((x) => ({ ...x, [k]: v }));
   const sample: ReceiptData = {
-    name: "ACC-PSINV-SAMPLE", posting_date: new Date().toISOString().slice(0, 10), posting_time: new Date().toTimeString().slice(0, 8), customer: "Walk-in Customer",
+    name: "ACC-PSINV-SAMPLE", posting_date: todayISO(), posting_time: new Date().toTimeString().slice(0, 8), customer: "Walk-in Customer",
     customer_name: "Walk-in Customer", cashier: "Cashier", pos_profile: "Counter", currency: "PKR", company: { company_name: "Your Company", address: "Main Road, City", phone_no: "042-0000000", tax_id: "0000000-0" },
     items: [{ item_code: "ITEM-1", item_name: "Sample item", qty: 2, uom: "Nos", rate: 250, amount: 500 }, { item_code: "ITEM-2", item_name: "Another item with a longer name", qty: 1, uom: "Kg", rate: 1200, amount: 1080, discount_percentage: 10 }],
     net_total: 1580, total: 1580, taxes: [], grand_total: 1580, rounded_total: 1580, payments: [{ mode_of_payment: "Cash", amount: 2000 }], change_amount: 420,

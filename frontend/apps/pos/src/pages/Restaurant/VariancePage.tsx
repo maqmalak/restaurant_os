@@ -4,11 +4,12 @@ import { Scale } from "lucide-react";
 import { PageHeader } from "@/components/common/page-header";
 import { formatMoney } from "@/utils/currency";
 import { cn } from "@/utils/cn";
+import { toISODate } from "@/utils/dates";
 
 interface Row { item_code: string; uom: string; opening: number; received: number; recipe: number; wastage: number; other_out: number;
   expected: number; counted: number; variance: number; variance_pct: number; valuation_rate: number; variance_value: number }
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+const iso = (d: Date) => toISODate(d);              // local date: toISOString is UTC (yesterday until 5 am here)
 const n = (v: number) => (Math.abs(v) < 0.0005 ? "—" : v.toLocaleString(undefined, { maximumFractionDigits: 3 }));
 
 /** Theoretical vs actual consumption per ingredient (script report "Ingredient Variance"). */

@@ -82,7 +82,7 @@ export default function TrackPage() {
         <div className="rounded-xl border border-border bg-card p-3">
           {t.items.map((i, k) => <div key={k} className="flex justify-between py-0.5"><span>{i.qty} × {i.item_name}</span>{i.free ? <span className="text-xs font-semibold text-green-600">Free</span> : null}</div>)}
           {(t.offers?.length || t.coupon) ? <div className="mt-2 flex items-center gap-1 text-xs text-green-600"><Gift className="h-3.5 w-3.5" />{[...(t.offers ?? []), t.coupon].filter(Boolean).join(" · ")}</div> : null}
-          {t.cod_amount > 0 && <div className="mt-2 flex justify-between border-t border-border pt-2 font-semibold"><span>Pay on {t.order_type === "Delivery" ? "delivery" : "pickup"}</span><span>{formatMoney(t.cod_amount, t.currency ?? "PKR")}</span></div>}
+          {t.cod_amount > 0 && <div className="mt-2 flex justify-between border-t border-border pt-2 font-semibold"><span>{delivered ? `Paid in cash on ${t.order_type === "Delivery" ? "delivery" : "pickup"}` : `Pay on ${t.order_type === "Delivery" ? "delivery" : "pickup"}`}</span><span>{formatMoney(t.cod_amount, t.currency ?? "PKR")}</span></div>}
           {t.payment_status === "Paid" && <div className="mt-2 flex justify-between border-t border-border pt-2 font-semibold text-green-600"><span>Paid online</span><span>✓</span></div>}
         </div>
         {t.points_earned ? <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 p-3 text-amber-800 dark:text-amber-300"><Star className="h-4 w-4" />You earned <b>{t.points_earned} points</b> on this order.</div> : null}
