@@ -62,6 +62,16 @@
   "ext_rider_lat",
   "ext_rider_lng",
   "ext_rider_eta",
+  "section_promo",
+  "coupon_code",
+  "offers_applied",
+  "discount_amount",
+  "column_break_pr",
+  "loyalty_points_redeemed",
+  "loyalty_amount",
+  "rating",
+  "review",
+  "review_requested_at",
   "section_stock",
   "stock_status",
   "stock_entry",
@@ -396,6 +406,66 @@
    "fieldname": "ext_rider_eta",
    "fieldtype": "Datetime",
    "label": "Rider ETA",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_promo",
+   "fieldtype": "Section Break",
+   "label": "Offers, Loyalty & Review",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "coupon_code",
+   "fieldtype": "Data",
+   "label": "Coupon",
+   "read_only": 1
+  },
+  {
+   "fieldname": "offers_applied",
+   "fieldtype": "Small Text",
+   "label": "Offers Applied",
+   "read_only": 1
+  },
+  {
+   "fieldname": "discount_amount",
+   "fieldtype": "Currency",
+   "label": "Bill Discount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_pr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "loyalty_points_redeemed",
+   "fieldtype": "Int",
+   "label": "Points Redeemed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "loyalty_amount",
+   "fieldtype": "Currency",
+   "label": "Points Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rating",
+   "fieldtype": "Int",
+   "label": "Rating",
+   "read_only": 1,
+   "description": "1\u20135 from the customer's review"
+  },
+  {
+   "fieldname": "review",
+   "fieldtype": "Link",
+   "label": "Review",
+   "options": "Order Review",
+   "read_only": 1
+  },
+  {
+   "fieldname": "review_requested_at",
+   "fieldtype": "Datetime",
+   "label": "Review Requested At",
    "read_only": 1
   },
   {

@@ -70,6 +70,16 @@ Dispatch (staff): `dispatch(branch?)`, `assign(order, rider)`, `handover(rider, 
 `menu(branch?)`, `quote(data)`, `place_order(data)` (idempotent on `client_order_uuid`), `kiosk_quote(data)`,
 `kiosk_order(data)` → held POS sale "Kiosk K<n>". Cart lines: `{item_code, qty, modifiers: [{group, name}], notes}`.
 
+## Guests: loyalty, reviews, campaigns — `restaurant_os.api.online`
+
+| Method | Who | What |
+|---|---|---|
+| `quote(data)` / `place_order(data)` | guest | also take `coupon_code`, `phone`, `redeem_points`; quote returns `offers`, `coupon`, `discount`, `points`, `points_value`, `to_pay`, free `lines` |
+| `loyalty(phone)` | guest | points, value, enrolled, can_redeem |
+| `review(key, data)` | guest | rate a delivered / collected order once (`rating_overall` 1–5, `rating_food`, `rating_delivery`, `comment`, `items[]`) |
+| `campaign_preview(name)` / `send_campaign(name)` | Sales / System Manager | recipients of a Restaurant Campaign; send it |
+| `send_review_requests()` | Sales / System Manager | run the review-request job now |
+
 ## Owner analytics — `restaurant_os.api.analytics` (managers)
 
 `live(branch?)`, `sales(filters)`, `kitchen(filters)`, `menu_engineering(filters)`, `customers(filters)` — filters JSON:

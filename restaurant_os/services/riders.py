@@ -161,7 +161,7 @@ def set_duty(rider, on, lat=None, lng=None):
 	frappe.publish_realtime("ros_dispatch", {"event": "duty", "rider": rider.name, "branch": rider.branch}, after_commit=True)
 	if cint(on):                                              # anything waiting for a rider?
 		for name in frappe.get_all("Restaurant Order", {"branch": rider.branch, "status": "Ready", "order_type": "Delivery",
-														 "delivery_by": "Own Rider", "delivery_assignment": ["in", ["", None]]}, pluck="name"):
+														 "delivery_by": "Own Rider", "delivery_assignment": ["is", "not set"]}, pluck="name"):
 			auto_assign(name)
 
 

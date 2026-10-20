@@ -55,6 +55,8 @@
   "column_break_c",
   "review_delay_minutes",
   "low_rating_alert",
+  "loyalty_program",
+  "online_redeem_points",
   "section_online",
   "online_ordering_enabled",
   "online_price_list",
@@ -351,6 +353,19 @@
    "fieldtype": "Int",
    "label": "Alert Manager At Or Below (stars)",
    "default": "2"
+  },
+  {
+   "fieldname": "loyalty_program",
+   "fieldtype": "Link",
+   "label": "Loyalty Program",
+   "options": "Loyalty Program",
+   "description": "Named customers (online, phone, picked at the counter) are enrolled and earn points on every invoice"
+  },
+  {
+   "fieldname": "online_redeem_points",
+   "fieldtype": "Check",
+   "label": "Customers Can Spend Points Online",
+   "default": "1"
   },
   {
    "fieldname": "section_online",

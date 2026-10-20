@@ -20,7 +20,9 @@ interface Live {
   kitchen_load: { station: string; queued: number; preparing: number }[]; avg_ticket_minutes: number; red_minutes: number;
   tables: { total: number; occupied: number; guests: number }; riders: { available: number; on_delivery: number; off_duty: number };
   deliveries: { on_road: number; waiting_rider: number }; low_stock: { item_name: string; actual_qty: number; warehouse_reorder_level: number; stock_uom: string }[];
-  sold_out: string[]; wastage_today: number; alerts: { level: "critical" | "warning"; text: string }[];
+  sold_out: string[]; wastage_today: number;
+  reviews?: { avg_7d: number; count_7d: number; open_low: number; recent: { name: string; order: string; customer_name?: string; rating_overall: number; comment?: string; channel?: string; status: string; creation: string }[] };
+  alerts: { level: "critical" | "warning"; text: string }[];
 }
 
 const short = (v: number) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : String(Math.round(v)));
@@ -155,8 +157,24 @@ export default function OwnerDashboardPage() {
                 <span className="tabular-nums text-amber-700 dark:text-amber-300">{+l.actual_qty.toFixed(2)} / {l.warehouse_reorder_level} {l.stock_uom}</span></li>
             ))}</ul>
           )}
-          <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground"><Star className="h-3 w-3" /> Customer reviews appear here with phase 9.</p>
         </Panel>
+        {d.reviews && <Panel title="Reviews" sub={`Last 7 days · ${d.reviews.count_7d} review(s)`} right={<Link to="/restaurant/reviews" className="text-xs font-semibold text-primary hover:underline">All reviews</Link>}>
+          <div className="mb-3 flex items-baseline gap-2">
+            <span className="text-2xl font-bold tabular-nums">{d.reviews.count_7d ? d.reviews.avg_7d.toFixed(1) : "—"}</span>
+            <span className="inline-flex items-center gap-0.5 text-sm text-muted-foreground"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /> average</span>
+            {d.reviews.open_low > 0 && <Link to="/restaurant/reviews" className="ml-auto inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-semibold text-red-700 dark:text-red-300">
+              <CircleAlert className="h-3 w-3" /> {d.reviews.open_low} low, unanswered</Link>}
+          </div>
+          {d.reviews.recent.length === 0 ? <Empty text="No reviews yet" /> : (
+            <ul className="space-y-2 text-sm">{d.reviews.recent.map((r) => (
+              <li key={r.name}><Link to={`/restaurant/reviews/${r.name}`} className="block rounded-lg p-1 hover:bg-muted">
+                <div className="flex justify-between gap-2"><span className="truncate font-medium">{r.customer_name || r.order}</span>
+                  <span className={cn("shrink-0 tabular-nums", r.rating_overall <= 2 ? "font-semibold text-red-600" : "text-amber-500")} aria-label={`${r.rating_overall} of 5`}>{"★".repeat(r.rating_overall)}<span className="text-muted-foreground/40">{"★".repeat(5 - r.rating_overall)}</span></span></div>
+                {r.comment && <div className="truncate text-xs text-muted-foreground">“{r.comment}”</div>}
+              </Link></li>
+            ))}</ul>
+          )}
+        </Panel>}
       </div>
     </div>
   );

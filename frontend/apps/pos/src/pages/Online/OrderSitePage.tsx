@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Bike, Clock, MapPin, Minus, Phone, Plus, ShoppingBag, Store, Trash2, X } from "lucide-react";
+import { Bike, Check, Clock, Gift, MapPin, Minus, Phone, Plus, ShoppingBag, Star, Store, Trash2, X } from "lucide-react";
 import { LiveMap } from "@/components/common/live-map";
-import { humanizeError, postCall } from "@/services/frappe";
+import { getCall, humanizeError, postCall } from "@/services/frappe";
 import { cn } from "@/utils/cn";
 import { ItemSheet } from "./ItemSheet";
 import { type CartLine, cartPayload, linePrice, type MenuItem, money, useMenu } from "./menu";
 
-interface Quote { subtotal: number; tax: number; total: number; taxes: { description: string; amount: number }[]; distance_km?: number; min_order: number }
+interface Quote { subtotal: number; tax: number; total: number; taxes: { description: string; amount: number }[]; distance_km?: number; min_order: number;
+  discount: number; offers: string[]; coupon?: string | null; points: number; points_value: number; to_pay: number;
+  lines: { item_code: string; item_name?: string; qty: number; is_free_item?: number }[] }
+interface Loyalty { points: number; value: number; enrolled: number; earn_per?: number; can_redeem: number }
 const CART_KEY = "ros.web.cart";
 const load = (): CartLine[] => { try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; } };
 
@@ -124,15 +127,31 @@ function Checkout({ menu, cart, setCart, onClose }: { menu: NonNullable<ReturnTy
   const [pay, setPay] = useState<"Cash" | "Online">(saved.pay === "Online" && menu.online_payment ? "Online" : "Cash");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [busy, setBusy] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState("");                  // the code sent with the quote / order
+  const [loyalty, setLoyalty] = useState<Loyalty | null>(null);
+  const [redeem, setRedeem] = useState(false);
   const uuid = useRef(crypto.randomUUID());
   const items = cartPayload(cart);
-  const key = JSON.stringify([items, type, pin]);
+  const digits = f.phone.replace(/\D/g, "");
+  const phone = digits.length >= 10 ? f.phone : "";
+  useEffect(() => {                                          // the diner's points, once the mobile number is complete
+    if (!phone) { setLoyalty(null); setRedeem(false); return; }
+    const t = setTimeout(() => { getCall<Loyalty>("restaurant_os.api.online.loyalty", { phone }).then(setLoyalty).catch(() => setLoyalty(null)); }, 400);
+    return () => clearTimeout(t);
+  }, [phone]);
+  const usePoints = redeem && !!loyalty?.can_redeem && (loyalty?.points ?? 0) > 0;
+  const key = JSON.stringify([items, type, pin, coupon, phone, usePoints]);
   useEffect(() => {
     if (!cart.length) return;
-    const t = setTimeout(() => { postCall<Quote>("restaurant_os.api.online.quote", { data: JSON.stringify({ branch: menu.branch.name, order_type: type, items, lat: pin?.lat, lng: pin?.lng }) })
-      .then(setQuote).catch((e) => toast.error(humanizeError(e))); }, 250);
+    const t = setTimeout(() => { postCall<Quote>("restaurant_os.api.online.quote", { data: JSON.stringify({ branch: menu.branch.name, order_type: type, items, lat: pin?.lat, lng: pin?.lng,
+      coupon_code: coupon || undefined, phone: phone || undefined, redeem_points: usePoints ? loyalty!.points : 0 }) })
+      .then((q) => { setQuote(q); if (coupon && !q.coupon) toast.error(`Code ${coupon} isn't valid for this order`); })
+      .catch((e) => toast.error(humanizeError(e))); }, 250);
     return () => clearTimeout(t);
   }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  const free = quote?.lines.filter((l) => l.is_free_item) ?? [];
+  const due = quote ? quote.to_pay : 0;
   const far = type === "Delivery" && quote?.distance_km != null && menu.branch.delivery_radius_km > 0 && quote.distance_km > menu.branch.delivery_radius_km;
   const subtotalNoFee = cart.reduce((s, l) => s + linePrice(l) * l.qty, 0);
   const belowMin = subtotalNoFee < menu.min_order;
@@ -143,6 +162,7 @@ function Checkout({ menu, cart, setCart, onClose }: { menu: NonNullable<ReturnTy
       localStorage.setItem("ros.web.me", JSON.stringify({ type, name: f.name, phone: f.phone, address: f.address, pin, pay }));
       const r = await postCall<{ tracking_key: string; order_no: string; payment_url?: string }>("restaurant_os.api.online.place_order", { data: JSON.stringify({
         branch: menu.branch.name, order_type: type, items, customer_name: f.name, phone: f.phone, address: f.address, notes: f.notes, payment: pay,
+        coupon_code: quote?.coupon || undefined, redeem_points: usePoints ? quote?.points ?? 0 : 0,
         lat: pin?.lat, lng: pin?.lng, client_order_uuid: uuid.current,
         source: window.matchMedia("(display-mode: standalone)").matches ? "app" : "web" }) });
       // clear the saved cart right away: navigating unmounts this page before its save-to-storage effect would run
@@ -179,6 +199,11 @@ function Checkout({ menu, cart, setCart, onClose }: { menu: NonNullable<ReturnTy
                 </div>
               </div>
             ))}
+            {free.map((l) => (
+              <div key={`free-${l.item_code}`} className="flex items-center gap-3 p-3 text-sm">
+                <Gift className="h-4 w-4 text-green-600" /><span className="flex-1">{l.qty} × {l.item_name ?? l.item_code}</span><span className="font-semibold text-green-600">Free</span>
+              </div>
+            ))}
             {cart.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">Your cart is empty.</p>}
           </div>
           <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted p-1">
@@ -198,6 +223,26 @@ function Checkout({ menu, cart, setCart, onClose }: { menu: NonNullable<ReturnTy
             </>}
             <label className="block text-sm">Note for the restaurant<textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} maxLength={300} rows={2} className="mt-1 w-full rounded-xl border border-input bg-transparent px-3 py-2" /></label>
           </div>
+          <div className="space-y-3 rounded-2xl border border-border p-3 text-sm">
+            <div className="font-semibold">Offers &amp; rewards</div>
+            <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); setCoupon(couponInput.trim().toUpperCase()); }}>
+              <input value={couponInput} onChange={(e) => setCouponInput(e.target.value)} placeholder="Promo code" aria-label="Promo code"
+                className="h-11 min-w-0 flex-1 rounded-xl border border-input bg-transparent px-3 uppercase" />
+              {quote?.coupon && coupon
+                ? <button type="button" onClick={() => { setCoupon(""); setCouponInput(""); }} className="h-11 rounded-xl border border-border px-4 font-semibold">Remove</button>
+                : <button disabled={!couponInput.trim()} className="h-11 rounded-xl bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-50">Apply</button>}
+            </form>
+            {quote?.coupon && <p className="flex items-center gap-1 text-xs text-green-600"><Check className="h-3.5 w-3.5" /> {quote.coupon} applied</p>}
+            {quote && quote.offers.length > 0 && <p className="flex items-center gap-1 text-xs text-green-600"><Gift className="h-3.5 w-3.5" /> {quote.offers.join(" · ")}</p>}
+            {loyalty?.enrolled ? (
+              <label className={cn("flex items-center gap-3 rounded-xl border p-3", usePoints ? "border-primary bg-primary/5" : "border-border")}>
+                <input type="checkbox" checked={redeem} disabled={!loyalty.can_redeem || !loyalty.points} onChange={(e) => setRedeem(e.target.checked)} className="h-4 w-4 accent-primary" />
+                <span className="flex-1"><span className="block font-medium">{loyalty.points ? `Use my ${loyalty.points} points` : "Rewards member"}</span>
+                  <span className="block text-xs text-muted-foreground">{!loyalty.points ? "You'll earn points on this order" : loyalty.can_redeem ? `Worth ${money(loyalty.value, cur)} off` : "Redeem them at the restaurant"}</span></span>
+                <Star className="h-4 w-4 text-amber-500" />
+              </label>
+            ) : phone ? <p className="text-xs text-muted-foreground">You'll join our rewards and earn points on this order.</p> : null}
+          </div>
           <div className="rounded-2xl border border-border p-3 text-sm">
             <div className="mb-2 font-semibold">Payment</div>
             {([["Cash", `Cash on ${type === "Delivery" ? "delivery" : "pickup"}`, "Pay when you get your food"],
@@ -214,8 +259,13 @@ function Checkout({ menu, cart, setCart, onClose }: { menu: NonNullable<ReturnTy
           </div>
           {quote && <div className="space-y-1 text-sm">
             <div className="flex justify-between"><span>Subtotal</span><span>{money(quote.subtotal, cur)}</span></div>
+            {quote.discount > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>− {money(quote.discount, cur)}</span></div>}
             {quote.taxes.map((t) => <div key={t.description} className="flex justify-between text-muted-foreground"><span>{t.description}</span><span>{money(t.amount, cur)}</span></div>)}
             <div className="flex justify-between border-t border-border pt-2 text-base font-bold"><span>Total</span><span>{money(quote.total, cur)}</span></div>
+            {quote.points > 0 && <>
+              <div className="flex justify-between text-green-600"><span>{quote.points} points</span><span>− {money(quote.points_value, cur)}</span></div>
+              <div className="flex justify-between text-base font-bold"><span>To pay</span><span>{money(due, cur)}</span></div>
+            </>}
             {type === "Delivery" && <p className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3 w-3" /> Includes the {money(menu.delivery_fee, cur)} delivery fee</p>}
           </div>}
         </div>
@@ -223,7 +273,7 @@ function Checkout({ menu, cart, setCart, onClose }: { menu: NonNullable<ReturnTy
           {belowMin && <p className="mb-2 text-center text-xs text-red-600">Add {money(menu.min_order - subtotalNoFee, cur)} more to reach the minimum order.</p>}
           <button disabled={busy || !cart.length || !f.name.trim() || f.phone.replace(/\D/g, "").length < 10 || belowMin || far || (type === "Delivery" && !f.address.trim()) || !menu.open}
             onClick={() => void place()} className="h-14 w-full rounded-2xl bg-primary text-lg font-bold text-primary-foreground disabled:opacity-50">
-            {busy ? "Placing your order…" : `${pay === "Online" ? "Pay" : "Place order"}${quote ? ` · ${money(quote.total, cur)}` : ""}`}</button>
+            {busy ? "Placing your order…" : `${pay === "Online" ? "Pay" : "Place order"}${quote ? ` · ${money(due, cur)}` : ""}`}</button>
         </div>
       </div>
     </div>

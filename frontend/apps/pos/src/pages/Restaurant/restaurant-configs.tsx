@@ -1,5 +1,7 @@
-import { Banknote, Bike, ChefHat, ClipboardList, Trash2, LayoutGrid, MapPin, Plug, Receipt, Settings2, SlidersVertical, Store, UtensilsCrossed } from "lucide-react";
+import { Banknote, Bike, Megaphone, MessageSquareHeart, Send, Users, ChefHat, ClipboardList, Trash2, LayoutGrid, MapPin, Plug, Receipt, Settings2, SlidersVertical, Store, UtensilsCrossed } from "lucide-react";
+import toast from "react-hot-toast";
 import type { DocConfig } from "@/components/doc/doc-config";
+import { postCall } from "@/services/frappe";
 import { sec, colBreak, tab, data, int, float, check, text, link, select, req, ro, nameCol, textCol, numCol, yesNoCol, statusCol, currency, percent, dateTimeCol, moneyCol, datetime } from "@/components/doc/doc-helpers";
 
 /* Restaurant masters (Phase 2): branches, KDS stations, the floor plan, menu modifiers, settings. */
@@ -349,4 +351,94 @@ export const RIDER_CONFIG: DocConfig = {
   titleOf: (v) => v.rider_name || "New Rider",
 };
 
-export const RESTAURANT_CONFIGS = [ORDER_CONFIG, WASTAGE_CONFIG, RIDER_CONFIG, BRANCH_CONFIG, STATION_CONFIG, TABLE_CONFIG, FLOOR_AREA_CONFIG, MODIFIER_GROUP_CONFIG, SETTINGS_CONFIG];
+const stars = (v: unknown) => (Number(v) ? "★".repeat(Number(v)) + "☆".repeat(5 - Number(v)) : "—");
+
+export const REVIEW_CONFIG: DocConfig = {
+  doctype: "Order Review",
+  base: "/restaurant/reviews",
+  singular: "Review",
+  plural: "Reviews",
+  subtitle: "What diners said after delivery or pickup — low ratings alert the managers",
+  icon: MessageSquareHeart,
+  listFields: ["name", "order", "customer_name", "channel", "rating_overall", "rating_food", "rating_delivery", "comment", "status", "creation"],
+  columns: [nameCol("Review", (r) => r.customer_name || r.order), textCol("rating_overall", "Overall", { render: (r) => <span className="text-amber-500">{stars(r.rating_overall)}</span> }),
+    textCol("channel", "Channel"), textCol("comment", "Comment"), dateTimeCol("creation", "When"), statusCol("status", "Status", "New")],
+  searchFields: ["name", "order", "customer_name", "comment"],
+  statusField: "status",
+  statuses: ["New", "Acknowledged", "Resolved"],
+  filters: [{ field: "rating_overall", label: "Stars", options: ["1", "2", "3", "4", "5"] }, { field: "channel", label: "Channel", options: ["Web", "App", "Kiosk", "Foodpanda", "POS"] }],
+  sort: { key: "creation", dir: "desc" },
+  fields: [
+    sec("Review"),
+    ro(link("order", "Order", "Restaurant Order")),
+    ro(link("customer", "Customer", "Customer")),
+    ro(data("customer_name", "Customer Name")),
+    ro(link("branch", "Branch", "Restaurant Branch")),
+    ro(data("channel", "Channel")), ro(data("order_type", "Order Type")), ro(data("source", "Source")),
+    colBreak(),
+    ro(int("rating_overall", "Overall (1–5)")), ro(int("rating_food", "Food (1–5)")), ro(int("rating_delivery", "Delivery (1–5)")),
+    ro(text("comment", "Comment")),
+    sec("Follow-up"),
+    select("status", "Status", ["New", "Acknowledged", "Resolved"]),
+    ro(check("alerted", "Managers Alerted")),
+    colBreak(),
+    text("manager_note", "Manager Note"),
+  ],
+  children: [{
+    key: "items", label: "Dishes", doctype: "Order Review Item",
+    columns: [ro(link("item_code", "Dish", "Item")), ro(data("item_name", "Name")), ro(int("rating", "Stars")), ro(data("comment", "Comment"))],
+  }],
+  titleOf: (v) => (v.name ? `${stars(v.rating_overall)} · ${v.customer_name ?? ""}` : "Review"),
+};
+
+export const CAMPAIGN_CONFIG: DocConfig = {
+  doctype: "Restaurant Campaign",
+  base: "/restaurant/campaigns",
+  singular: "Campaign",
+  plural: "Campaigns",
+  subtitle: "WhatsApp / SMS blasts to a customer segment, optionally with a coupon",
+  icon: Megaphone,
+  listFields: ["name", "title", "segment", "channel", "pos_coupon", "recipients_count", "sent_on", "status", "modified"],
+  columns: [nameCol("Campaign", (r) => r.title), textCol("segment", "Segment"), textCol("channel", "Channel"), textCol("pos_coupon", "Coupon"),
+    numCol("recipients_count", "Sent to", 0), dateTimeCol("sent_on", "Sent"), statusCol("status", "Status", "Draft")],
+  searchFields: ["title"],
+  statusField: "status",
+  statuses: ["Draft", "Sent"],
+  fields: [
+    sec("Campaign"),
+    req(data("title", "Title")),
+    req(select("segment", "Segment", ["Lapsed customers", "New this month", "Top spenders", "Everyone with a mobile"])),
+    { ...int("lapsed_days", "No order for (days)"), showIf: (v) => v.segment === "Lapsed customers" },
+    { ...int("top_n", "Top N customers"), showIf: (v) => v.segment === "Top spenders" },
+    colBreak(),
+    select("channel", "Channel", ["WhatsApp", "SMS"]),
+    link("pos_coupon", "Coupon", "POS Coupon"),
+    ro(data("status", "Status")),
+    sec("Message"),
+    req(text("message", "Message — {name} {restaurant} {coupon} {link} are filled in")),
+    sec("Result"),
+    ro(int("recipients_count", "Sent to")),
+    colBreak(),
+    ro(datetime("sent_on", "Sent On")),
+  ],
+  children: [{
+    key: "recipients", label: "Recipients", doctype: "Restaurant Campaign Recipient",
+    columns: [ro(link("customer", "Customer", "Customer")), ro(data("customer_name", "Name")), ro(data("mobile", "Mobile")), ro(data("status", "Status"))],
+  }],
+  actions: [
+    { label: "Preview recipients", icon: Users, show: (c) => !c.isNew, run: async (c) => {
+      const r = await postCall<{ count: number; sample: { name: string; mobile: string }[] }>("restaurant_os.api.online.campaign_preview", { name: c.name });
+      toast(`${r.count} customer(s) in this segment${r.sample.length ? `: ${r.sample.slice(0, 5).map((x) => x.name).join(", ")}${r.count > 5 ? "…" : ""}` : ""}`, { duration: 6000 });
+    } },
+    { label: "Send campaign", icon: Send, show: (c) => !c.isNew && c.values.status !== "Sent", run: async (c) => {
+      if (!window.confirm("Send this campaign to every customer in the segment now?")) return;
+      const r = await postCall<{ sent: number }>("restaurant_os.api.online.send_campaign", { name: c.name });
+      toast.success(`Sent to ${r.sent} customer(s)`); c.reload();
+    } },
+  ],
+  defaults: () => ({ segment: "Lapsed customers", lapsed_days: 30, top_n: 50, channel: "WhatsApp", status: "Draft",
+    message: "Hi {name}, we miss you at {restaurant}! Use code {coupon} on your next order: {link}" }),
+  titleOf: (v) => v.title || "New Campaign",
+};
+
+export const RESTAURANT_CONFIGS = [REVIEW_CONFIG, CAMPAIGN_CONFIG, ORDER_CONFIG, WASTAGE_CONFIG, RIDER_CONFIG, BRANCH_CONFIG, STATION_CONFIG, TABLE_CONFIG, FLOOR_AREA_CONFIG, MODIFIER_GROUP_CONFIG, SETTINGS_CONFIG];

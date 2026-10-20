@@ -164,6 +164,23 @@ def ensure_users():
 	return [u[0] for u in USERS]
 
 
+def ensure_loyalty_program(accounts):
+	"""Saffron Rewards: 1 point per Rs 100 spent, 1 point = Rs 1 off, points expire after a year."""
+	name = "Saffron Rewards"
+	if not frappe.db.exists("Loyalty Program", name):
+		expense = _account("Loyalty Points Expense", "Indirect Expenses")
+		frappe.get_doc({"doctype": "Loyalty Program", "loyalty_program_name": name, "loyalty_program_type": "Single Tier Program",
+						"company": COMPANY, "from_date": nowdate(), "auto_opt_in": 0, "conversion_factor": 1, "expiry_duration": 365,
+						"expense_account": expense, "cost_center": acct(BRANCH),
+						"collection_rules": [{"tier_name": "Member", "min_spent": 0, "collection_factor": 100}]}).insert(ignore_permissions=True)
+	# named customers already on file (with a mobile) join; walk-in / Foodpanda never do
+	anon = {WALK_IN, "Foodpanda"}
+	for c in frappe.get_all("Customer", {"mobile_no": ["is", "set"], "loyalty_program": ["is", "not set"]}, pluck="name"):
+		if c not in anon:
+			frappe.db.set_value("Customer", c, "loyalty_program", name)
+	return name
+
+
 RIDERS = [("rider1@saffrongrill.example", "Imran", "Ali", "Motorbike", "LEA-1234"),
 		  ("rider2@saffrongrill.example", "Zubair", "Khan", "Motorbike", "LEB-5678"),
 		  ("rider3@saffrongrill.example", "Shahid", "Iqbal", "Bicycle", "")]
@@ -264,6 +281,8 @@ def ensure_settings(branch, accounts):
 							"description": "Delivery fee on online / phone orders"}).insert(ignore_permissions=True)
 		s.update({"delivery_fee_item": "Delivery Charge", "delivery_fee": s.delivery_fee or 150, "min_order_amount": s.min_order_amount or 500,
 				  "online_ordering_enabled": 1, "kiosk_enabled": 1, "kiosk_idle_seconds": s.kiosk_idle_seconds or 90})
+	if not s.loyalty_program:
+		s.update({"loyalty_program": ensure_loyalty_program(accounts), "online_redeem_points": 1})
 	if not s.online_payment_mode:
 		s.update({"online_payment_mode": "Online Payment", "online_payment_enabled": 1, "payment_gateway_mode": "Mock", "payment_gateway": "Safepay"})
 	if not s.rider_float_account:

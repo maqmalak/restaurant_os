@@ -37,7 +37,7 @@ def backfill_channels():
 
 	for o in frappe.get_all("Restaurant Order", {"invoice_doctype": "Sales Invoice", "invoice": ["is", "set"]}, ["name", "channel", "invoice"]):
 		frappe.db.set_value("Sales Invoice", o.invoice, {"ros_channel": o.channel, "ros_order": o.name}, update_modified=False)
-	for name in frappe.get_all("Sales Invoice", {"ros_channel": ["in", ["", None]], "docstatus": ["<", 2]},
+	for name in frappe.get_all("Sales Invoice", {"ros_channel": ["is", "not set"], "docstatus": ["<", 2]},
 							   or_filters={"is_pos": 1, "is_consolidated": 1}, pluck="name"):
 		frappe.db.set_value("Sales Invoice", name, "ros_channel", "POS", update_modified=False)
 

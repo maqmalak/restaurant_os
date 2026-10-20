@@ -9,6 +9,8 @@ export const DOC_ROUTES: Record<string, string> = {
   "Restaurant Order": "/restaurant/orders/",
   "Wastage Log": "/restaurant/wastage/",
   "Rider": "/restaurant/riders/",
+  "Order Review": "/restaurant/reviews/",
+  "Restaurant Campaign": "/restaurant/campaigns/",
   "POS Opening Shift": "/pos/openings/",
   "POS Closing Shift": "/pos/closings/",
   "POS Cash Movement": "/pos/cash-movements/",

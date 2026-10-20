@@ -25,11 +25,11 @@ def start(order):
 	gw = gateway()
 	ir = frappe.get_doc({"doctype": "Integration Request", "integration_request_service": f"Payment {gw.name}", "is_remote_request": 0,
 						 "status": "Queued", "reference_doctype": "Restaurant Order", "reference_docname": order.name,
-						 "data": json.dumps({"order": order.name, "order_no": order.order_no, "amount": flt(order.grand_total),
+						 "data": json.dumps({"order": order.name, "order_no": order.order_no, "amount": flt(order.grand_total) - flt(order.loyalty_amount),
 											 "currency": frappe.get_cached_value("Company", order.company, "default_currency")})})
 	ir.insert(ignore_permissions=True)
 	order.db_set({"payment_request": ir.name, "payment_status": "Awaiting", "payment_method": "Online"})
-	return gw.checkout_url(ir.name, flt(order.grand_total), order)
+	return gw.checkout_url(ir.name, flt(order.grand_total) - flt(order.loyalty_amount), order)
 
 
 def mark_paid(session, reference=None):

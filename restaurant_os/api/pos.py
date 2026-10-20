@@ -89,7 +89,7 @@ def _profiles_for_user():
 
 
 def _open_shift(profile=None):
-	f = {"user": frappe.session.user, "docstatus": 1, "status": "Open", "pos_closing_shift": ["in", ["", None]]}
+	f = {"user": frappe.session.user, "docstatus": 1, "status": "Open", "pos_closing_shift": ["is", "not set"]}
 	if profile:
 		f["pos_profile"] = profile
 	return frappe.db.get_value("POS Opening Shift", f, ["name", "pos_profile", "company", "period_start_date"], as_dict=True,
@@ -605,6 +605,9 @@ def create_customer(data: str) -> dict:
 			contact.append("email_ids", {"email_id": d["email_id"], "is_primary": 1})
 		contact.insert(ignore_permissions=True)
 		doc.db_set("customer_primary_contact", contact.name)
+	from restaurant_os.services.loyalty import enroll
+
+	enroll(doc.name)                                          # loyalty: named counter customers earn points
 	return {"name": doc.name, "customer_name": doc.customer_name}
 
 

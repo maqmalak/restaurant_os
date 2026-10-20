@@ -177,7 +177,11 @@ def new_delivery_order(data: str) -> dict:
 		frappe.throw(_("Add the delivery address and at least one item."))
 	check(branch, lines)
 	prof, price_list = _price_list(branch)
-	customer = frappe.db.get_value("Customer", {"mobile_no": d.get("phone")}, "name") if d.get("phone") else None
+	customer = None
+	if d.get("phone") and len("".join(c for c in d["phone"] if c.isdigit())) >= 10:
+		from restaurant_os.api.online import _customer
+
+		customer = _customer(d.get("customer_name"), d["phone"])  # found or created by mobile, enrolled in loyalty
 	customer = customer or frappe.get_cached_value("POS Profile", prof, "customer")
 	rows = [{"item_code": i["item_code"], "qty": flt(i["qty"]), "notes": i.get("notes"),
 			 "rate": flt(frappe.db.get_value("Item Price", {"item_code": i["item_code"], "price_list": price_list}, "price_list_rate"))} for i in lines]
@@ -211,6 +215,8 @@ STEPS = ["Placed", "Preparing", "Ready", "Out for Delivery", "Delivered"]
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=120, seconds=60)
 def track(key: str) -> dict:
+	from restaurant_os.services.loyalty import earned_on
+
 	name = frappe.db.get_value("Restaurant Order", {"tracking_key": key}, "name") if key and len(key) >= 10 else None
 	if not name:
 		frappe.throw(_("Order not found."), frappe.DoesNotExistError)
@@ -230,6 +236,10 @@ def track(key: str) -> dict:
 		"order_no": o.order_no, "status": status, "raw_status": o.status, "steps": steps, "step": steps.index(status) if status in steps else -1,
 		"order_type": o.order_type, "payment_method": o.payment_method, "payment_status": o.payment_status,
 		"awaiting_payment": o.status == "Awaiting Payment",
+		"can_review": o.status in ("Delivered", "Completed") and not o.review, "rating": o.rating,
+		"points_earned": earned_on(o.invoice),
+		"points_redeemed": o.loyalty_points_redeemed, "points_value": flt(o.loyalty_amount), "discount": flt(o.discount_amount),
+		"offers": [x for x in (o.offers_applied or "").split("\n") if x], "coupon": o.coupon_code,
 		"cancelled": o.status in ("Cancelled", "Rejected"), "restaurant": company, "branch": o.branch,
 		"logo": frappe.get_cached_value("Company", company, "company_logo"),
 		"branch_point": {"lat": blat, "lng": blng}, "drop": {"lat": o.delivery_lat, "lng": o.delivery_lng, "address": o.delivery_address},
@@ -237,6 +247,7 @@ def track(key: str) -> dict:
 				  "lat": pos[0] if pos else None, "lng": pos[1] if pos else None, "by": o.delivery_by},
 		"eta_minutes": svc.eta_minutes(o, pos), "delivery_code": o.delivery_otp if o.status not in ("Delivered", "Completed") else None,
 		"cod_amount": flt(o.cod_amount) or (flt(o.grand_total) if o.order_type == "Pickup" and not o.invoice and o.payment_status != "Paid" else 0),
-		"items": [{"item_name": r.item_name, "qty": r.qty, "modifiers": r.modifiers} for r in o.items if r.kds_status != "Void"],
+		"items": [{"item_code": r.item_code, "item_name": r.item_name, "qty": r.qty, "modifiers": r.modifiers, "free": r.is_free_item}
+				  for r in o.items if r.kds_status != "Void"],
 		"placed_at": str(o.placed_at),
 	}

@@ -267,9 +267,13 @@ def live(branch=None):
 	if late:
 		alerts.append({"level": "warning", "text": f"{len(late)} order(s) in the kitchen longer than {red} min"})
 	waiting = frappe.db.count("Restaurant Order", {"branch": branch, "status": "Ready", "order_type": "Delivery", "delivery_by": "Own Rider",
-												   "rider": ["in", ["", None]]})
+												   "rider": ["is", "not set"]})
 	if waiting:
 		alerts.append({"level": "warning", "text": f"{waiting} delivery order(s) ready with no rider"})
+	low_reviews = frappe.db.count("Order Review", {"branch": branch, "status": "New",
+												   "rating_overall": ["<=", cint(s.low_rating_alert) or 2]})
+	if low_reviews:
+		alerts.append({"level": "critical", "text": f"{low_reviews} low rating(s) waiting for a reply — see Reviews"})
 	return {
 		"branch": branch, "branches": frappe.get_all("Restaurant Branch", {"disabled": 0}, pluck="name"), "now": str(now),
 		"today": {k: v for k, v in t.items() if k not in ("hours", "channels", "items")},
@@ -285,7 +289,21 @@ def live(branch=None):
 		"deliveries": {"on_road": frappe.db.count("Restaurant Order", {"branch": branch, "status": ["in", ["Picked Up", "Out for Delivery"]]}),
 					   "waiting_rider": waiting},
 		"low_stock": low, "sold_out": sold_out(branch), "wastage_today": wastage, "alerts": alerts,
+		"reviews": _reviews(branch),
 	}
+
+
+def _reviews(branch):
+	since = add_days(nowdate(), -7)
+	avg, count = frappe.db.sql("""select avg(rating_overall), count(*) from `tabOrder Review` where branch = %s and date(creation) >= %s""",
+							   (branch, since))[0]
+	recent = frappe.get_all("Order Review", {"branch": branch}, ["name", "order", "customer_name", "rating_overall", "comment", "channel", "status", "creation"],
+							order_by="creation desc", limit=5)
+	for r in recent:
+		r.creation = str(r.creation)
+	low = frappe.db.count("Order Review", {"branch": branch, "status": "New",
+											"rating_overall": ["<=", cint(frappe.db.get_single_value("Restaurant Settings", "low_rating_alert")) or 2]})
+	return {"avg_7d": round(flt(avg), 1), "count_7d": cint(count), "recent": recent, "open_low": low}
 
 
 def _count(rows, key):

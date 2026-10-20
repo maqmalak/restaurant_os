@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-21 — Phase 9: offers online, loyalty, reviews, campaigns
+
+- **Offers & coupons online**: web orders get the same POS Offers as the counter (free Raita with Karahi shows in the cart and
+  is made by the kitchen); a promo code (POS Coupon) at checkout, counted on the invoice. Quote = invoice.
+- **Loyalty — Saffron Rewards** (ERPNext Loyalty Program: 1 point per Rs 100, 1 point = Rs 1, 365-day expiry): diners with a
+  mobile are enrolled; delivery / pickup invoices earn points; checkout shows the balance and can redeem it (Settings →
+  online redeem) — it lowers cash-on-delivery / the online charge. Tracking page shows points earned.
+- **Reviews**: after delivery / pickup the tracking page asks for stars (overall, food, delivery, each dish) and a comment →
+  *Order Review*. A WhatsApp link (mock) goes out `review delay` minutes after the order finishes (every 10 min). Ratings at or
+  below the alert level notify Sales / System Managers and appear as a dashboard alert. Screen: Guests → Reviews.
+- **Campaigns**: WhatsApp / SMS blasts (mock) to Lapsed / New this month / Top spenders / Everyone, with {name}, {restaurant},
+  {coupon}, {link}; preview the recipients, then send. Screen: Guests → Campaigns.
+- Owner dashboard: Reviews panel (7-day average, recent, low & unanswered).
+- Fixes: `["in", ["", None]]` filters never matched empty (NULL) links — now `is not set` everywhere (review requests,
+  loyalty enrolment, unassigned deliveries, open shift lookup, channel backfill).
+- Tests: 32 backend passing.
+
 ## 2026-10-21 — Online payment (cash + card / wallet) for web orders
 
 - Checkout offers **Cash** or **Pay online**; online orders wait as *Awaiting Payment* (off the KDS) until the gateway confirms,

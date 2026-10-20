@@ -145,22 +145,52 @@ def _with_fee(rows, order_type):
 	return rows
 
 
-def _bill(branch, rows, customer, channel="Web"):
-	"""Totals exactly as the order will be invoiced (the delivery service's Sales Invoice, unsaved)."""
+def _bill(branch, rows, customer, channel="Web", coupon=None, redeem_points=0):
+	"""Totals exactly as the order will be invoiced: the delivery service's Sales Invoice (unsaved), with the POS Offers,
+	the coupon and redeemed points applied. Also returns the priced order lines (offer rates, free items)."""
 	from restaurant_os.services.delivery import build_sales_invoice
 
-	# a plain object: on a frappe._dict, `.items` would be the dict method, not the order lines
-	order = SimpleNamespace(name=None, order_no=None, channel=channel, branch=branch, customer=customer, customer_name=None,
-							external_order_id=None, company=frappe.get_cached_value("Restaurant Branch", branch, "company"),
-							items=[frappe._dict({**r, "kds_status": "Queued"}) for r in rows])
+	class _Order(SimpleNamespace):                            # a plain object: on a frappe._dict `.items` is the dict method
+		def get(self, key, default=None):
+			return getattr(self, key, default)
+
+	order = _Order(name=None, order_no=None, channel=channel, branch=branch, customer=customer, customer_name=None,
+				   external_order_id=None, company=frappe.get_cached_value("Restaurant Branch", branch, "company"),
+				   items=[frappe._dict({**r, "kds_status": "Queued"}) for r in rows])
 	with as_system():
-		si = build_sales_invoice(order)
-	return {"subtotal": flt(si.net_total), "tax": flt(si.total_taxes_and_charges), "total": flt(si.rounded_total or si.grand_total),
-			"taxes": [{"description": t.description, "amount": flt(t.tax_amount)} for t in si.taxes]}
+		si = build_sales_invoice(order, apply_offers=True, coupon=coupon, redeem_points=cint(redeem_points))
+	priced = []
+	for i, it in enumerate(si.items):
+		if i < len(rows):
+			priced.append({**rows[i], "rate": flt(it.rate)})
+		else:                                                 # a free item from an offer: the kitchen makes it too
+			priced.append({"item_code": it.item_code, "item_name": it.item_name, "qty": flt(it.qty), "rate": 0, "is_free_item": 1,
+						   "notes": "free (offer)"})
+	total = flt(si.rounded_total or si.grand_total)
+	coupon_ok = next((c.coupon_code for c in si.get("posa_coupons") or [] if c.applied), None)
+	return {"subtotal": flt(si.net_total), "tax": flt(si.total_taxes_and_charges), "total": total, "discount": flt(si.discount_amount),
+			"taxes": [{"description": t.description, "amount": flt(t.tax_amount)} for t in si.taxes],
+			"offers": [o.offer_name for o in si.get("posa_offers") or []], "coupon": coupon_ok,
+			"points": cint(si.loyalty_points) if si.redeem_loyalty_points else 0,
+			"points_value": flt(si.loyalty_amount) if si.redeem_loyalty_points else 0,
+			"to_pay": flt(total - (flt(si.loyalty_amount) if si.redeem_loyalty_points else 0), 2), "priced": priced}
 
 
 def _walk_in(branch):
 	return frappe.get_cached_value("POS Profile", _profile(branch), "customer")
+
+
+def _known_customer(phone):
+	phone = (phone or "").strip()
+	return frappe.db.get_value("Customer", {"mobile_no": phone, "disabled": 0}, "name") if len("".join(c for c in phone if c.isdigit())) >= 10 else None
+
+
+def _points_to_redeem(d, customer):
+	if not cint(d.get("redeem_points")) or not customer or not cint(_settings().online_redeem_points):
+		return 0
+	from restaurant_os.services.loyalty import balance
+
+	return min(cint(d.get("redeem_points")), balance(customer)["points"])
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -170,19 +200,26 @@ def quote(data: str) -> dict:
 	branch = _branch(d.get("branch"))
 	order_type = "Delivery" if d.get("order_type") == "Delivery" else "Pickup"
 	rows = _with_fee(_lines(branch, d.get("items")), order_type)
-	out = _bill(branch, rows, _walk_in(branch))
+	customer = _known_customer(d.get("phone"))
+	out = _bill(branch, rows, customer or _walk_in(branch), coupon=(d.get("coupon_code") or "").strip() or None,
+				redeem_points=_points_to_redeem(d, customer))
 	if order_type == "Delivery" and d.get("lat") and d.get("lng"):
 		blat, blng = rsvc.branch_point(branch)
 		out["distance_km"] = round(rsvc.km(blat, blng, d["lat"], d["lng"]), 2)
-	return {**out, "lines": rows, "min_order": flt(_settings().min_order_amount)}
+	out["lines"] = out.pop("priced")
+	return {**out, "min_order": flt(_settings().min_order_amount)}
 
 
 def _customer(name, phone):
 	phone = (phone or "").strip()
 	if len("".join(ch for ch in phone if ch.isdigit())) < 10:
 		frappe.throw(_("Enter a valid mobile number."))
+	from restaurant_os.services.loyalty import enroll
+
 	existing = frappe.db.get_value("Customer", {"mobile_no": phone, "disabled": 0}, "name")
 	if existing:
+		with as_system():
+			enroll(existing)
 		return existing
 	from restaurant_os.setup.masters import leaf
 
@@ -190,6 +227,7 @@ def _customer(name, phone):
 		doc = frappe.get_doc({"doctype": "Customer", "customer_name": (name or "Online customer").strip()[:140], "customer_type": "Individual",
 							  "customer_group": leaf("Customer Group", "customer_group", "Individual"),
 							  "territory": leaf("Territory", "territory", "Pakistan"), "mobile_no": phone}).insert(ignore_permissions=True)
+		enroll(doc.name)                                      # loyalty: named customers earn points
 	return doc.name
 
 
@@ -225,7 +263,8 @@ def place_order(data: str) -> dict:
 		frappe.throw(_("The minimum order is {0}.").format(frappe.format_value(s.min_order_amount, "Currency")))
 	rows = _with_fee(rows, order_type)
 	customer = _customer(name, d.get("phone"))
-	bill = _bill(branch, rows, customer)
+	bill = _bill(branch, rows, customer, coupon=(d.get("coupon_code") or "").strip() or None, redeem_points=_points_to_redeem(d, customer))
+	rows = bill["priced"]                                     # offer rates + free items
 	channel = "App" if d.get("source") == "app" else "Web"
 	online = d.get("payment") == "Online"
 	if online and not cint(s.online_payment_enabled):
@@ -237,7 +276,9 @@ def place_order(data: str) -> dict:
 							 grand_total=bill["total"], await_payment=online,
 							 delivery={"delivery_phone": d.get("phone"), "delivery_address": (d.get("address") or "").strip() or None,
 									   "delivery_lat": lat or None, "delivery_lng": lng or None,
-									   "cod_amount": bill["total"] if order_type == "Delivery" and not online else 0,
+									   "cod_amount": bill["to_pay"] if order_type == "Delivery" and not online else 0,
+									   "coupon_code": bill["coupon"], "offers_applied": "\n".join(bill["offers"]) or None,
+									   "discount_amount": bill["discount"], "loyalty_points_redeemed": bill["points"], "loyalty_amount": bill["points_value"],
 									   "payment_method": "Online" if online else "Cash", "payment_status": "Awaiting" if online else "Unpaid"})
 		if not order.tracking_key:                            # pickup orders get a tracking link too
 			order.db_set("tracking_key", frappe.generate_hash(length=12))
@@ -246,7 +287,32 @@ def place_order(data: str) -> dict:
 
 			payment_url = start(order.name)
 	return {"order": order.name, "order_no": order.order_no, "tracking_key": frappe.db.get_value("Restaurant Order", order.name, "tracking_key"),
-			"total": bill["total"], "payment_url": payment_url}
+			"total": bill["total"], "to_pay": bill["to_pay"], "payment_url": payment_url}
+
+
+# ------------------------------------------------------------------ loyalty & reviews (customer)
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=20, seconds=60)
+def loyalty(phone: str) -> dict:
+	"""Points for a mobile number at checkout (points only — no personal details are returned)."""
+	from restaurant_os.services.loyalty import balance
+
+	customer = _known_customer(phone)
+	if not customer:
+		return {"points": 0, "value": 0, "enrolled": 0}
+	with as_system():
+		b = balance(customer)
+	return {"points": b["points"], "value": b["value"], "enrolled": 1 if b["program"] else 0, "earn_per": b.get("earn_per"),
+			"can_redeem": cint(_settings().online_redeem_points)}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@rate_limit(limit=10, seconds=60)
+def review(key: str, data: str) -> dict:
+	from restaurant_os.services.reviews import submit
+
+	with as_system():
+		return {"review": submit(key, data)}
 
 
 # ------------------------------------------------------------------ kiosk
@@ -287,3 +353,29 @@ def kiosk_order(data: str) -> dict:
 					   "notes": " · ".join(x for x in (r.get("modifiers"), r.get("notes")) if x) or None} for r in rows]}))
 	frappe.publish_realtime("ros_kiosk", {"branch": branch, "number": f"K{n}", "invoice": res["name"]}, after_commit=True)
 	return {"number": f"K{n}", "total": res.get("grand_total"), "invoice": res["name"]}
+
+
+# ------------------------------------------------------------------ staff: campaigns, review requests
+@frappe.whitelist(methods=["POST"])
+def send_campaign(campaign: str) -> dict:
+	from restaurant_os.services.campaigns import send
+
+	frappe.only_for(("System Manager", "Sales Manager"))
+	return send(campaign)
+
+
+@frappe.whitelist()
+def campaign_preview(campaign: str) -> dict:
+	from restaurant_os.services.campaigns import recipients
+
+	frappe.only_for(("System Manager", "Sales Manager"))
+	rows = recipients(frappe.get_doc("Restaurant Campaign", campaign))
+	return {"count": len(rows), "sample": [{"name": r.name, "mobile": r.mobile} for r in rows[:10]]}
+
+
+@frappe.whitelist(methods=["POST"])
+def send_review_requests() -> dict:
+	from restaurant_os.services.reviews import request_due
+
+	frappe.only_for(("System Manager", "Sales Manager"))
+	return {"sent": request_due()}

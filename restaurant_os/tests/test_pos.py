@@ -479,3 +479,82 @@ class TestRestaurantPOS(IntegrationTestCase):
 		kds.assign_rider(o["order"], rider.name)
 		card = next(c for c in kds.board()["cards"] if c["name"] == o["order"])
 		self.assertEqual(card["rider"], rider.name)
+
+	# ---------------------------------------------------------------- phase 9: promotions, loyalty, reviews, campaigns
+	def _deliver(self, order):
+		while frappe.db.get_value("Restaurant Order", order, "status") not in ("Delivered", "Completed"):
+			kds.advance(order)
+		return frappe.db.get_value("Restaurant Order", order, "invoice")
+
+	def test_online_offers_and_coupon(self):
+		from restaurant_os.api import online
+
+		cart = [{"item_code": "Chicken Karahi", "qty": 1, "modifiers": [{"group": "Spice Level", "name": "Mild"}]}]
+		q = online.quote(json.dumps({"order_type": "Pickup", "items": cart, "coupon_code": "WELCOME10"}))
+		self.assertIn("Raita", [l["item_code"] for l in q["lines"] if l.get("is_free_item")], "free raita offer online")
+		self.assertEqual(q["coupon"], "WELCOME10")
+		self.assertGreater(q["discount"], 0)
+		used = frappe.db.get_value("POS Coupon", "WELCOME10", "used") or 0
+		r = online.place_order(json.dumps({"order_type": "Pickup", "items": cart, "coupon_code": "WELCOME10", "customer_name": "Offer Diner", "phone": "03001110000"}))
+		o = frappe.get_doc("Restaurant Order", r["order"])
+		self.assertTrue(any(i.item_code == "Raita" and i.is_free_item for i in o.items), "the kitchen makes the free raita")
+		inv = self._deliver(o.name)
+		self.assertAlmostEqual(flt(frappe.db.get_value("Sales Invoice", inv, "rounded_total")), q["total"], places=2, msg="quote = invoice with offers")
+		self.assertEqual(frappe.db.get_value("POS Coupon", "WELCOME10", "used"), used + 1, "coupon use counted")
+
+	def test_loyalty_earn_and_redeem_online(self):
+		from restaurant_os.api import online
+		from restaurant_os.services.loyalty import balance
+
+		cart = [{"item_code": "Mutton Chops", "qty": 2, "modifiers": [{"group": "Spice Level", "name": "Hot"}]}]
+		r = online.place_order(json.dumps({"order_type": "Pickup", "items": cart, "customer_name": "Points Diner", "phone": "03002223344"}))
+		customer = frappe.db.get_value("Restaurant Order", r["order"], "customer")
+		self.assertEqual(frappe.db.get_value("Customer", customer, "loyalty_program"), "Saffron Rewards")
+		self._deliver(r["order"])
+		earned = balance(customer)["points"]
+		self.assertGreater(earned, 30, "≈ 1 point per Rs 100")
+		self.assertEqual(online.loyalty("03002223344")["points"], earned)
+		q = online.quote(json.dumps({"order_type": "Pickup", "items": cart, "phone": "03002223344", "redeem_points": 20}))
+		self.assertEqual((q["points"], q["points_value"]), (20, 20))
+		r2 = online.place_order(json.dumps({"order_type": "Pickup", "items": cart, "customer_name": "Points Diner", "phone": "03002223344", "redeem_points": 20}))
+		inv = self._deliver(r2["order"])
+		si = frappe.db.get_value("Sales Invoice", inv, ["redeem_loyalty_points", "loyalty_points", "outstanding_amount", "rounded_total"], as_dict=True)
+		self.assertEqual((si.redeem_loyalty_points, si.loyalty_points), (1, 20))
+		self.assertAlmostEqual(flt(si.outstanding_amount), flt(si.rounded_total) - 20, places=2)
+
+	def test_review_and_low_rating_alert(self):
+		from restaurant_os.api import online
+		from restaurant_os.api.riders import track
+
+		r = online.place_order(json.dumps({"order_type": "Pickup", "customer_name": "Review Diner", "phone": "03004445555",
+										   "items": [{"item_code": "Nihari", "qty": 1, "modifiers": [{"group": "Spice Level", "name": "Mild"}]}]}))
+		with self.assertRaises(frappe.ValidationError):
+			online.review(r["tracking_key"], json.dumps({"rating_overall": 5}))   # not delivered yet
+		self._deliver(r["order"])
+		self.assertTrue(track(r["tracking_key"])["can_review"])
+		rv = online.review(r["tracking_key"], json.dumps({"rating_overall": 1, "rating_food": 2, "comment": "Cold food",
+														  "items": [{"item_code": "Nihari", "rating": 1}]}))["review"]
+		doc = frappe.get_doc("Order Review", rv)
+		self.assertEqual((doc.rating_overall, doc.alerted, len(doc.items)), (1, 1, 1))
+		self.assertTrue(frappe.db.exists("Notification Log", {"document_type": "Order Review", "document_name": rv}))
+		self.assertEqual(frappe.db.get_value("Restaurant Order", r["order"], "rating"), 1)
+		with self.assertRaises(frappe.ValidationError):
+			online.review(r["tracking_key"], json.dumps({"rating_overall": 5}))   # once per order
+
+	def test_review_request_and_campaign(self):
+		from restaurant_os.api import online
+		from restaurant_os.services.reviews import request_due
+
+		r = online.place_order(json.dumps({"order_type": "Pickup", "customer_name": "Lapsed Diner", "phone": "03006667777",
+										   "items": [{"item_code": "Chicken Korma", "qty": 1, "modifiers": [{"group": "Spice Level", "name": "Mild"}]}]}))
+		self._deliver(r["order"])
+		frappe.db.set_value("Restaurant Order", r["order"], {"completed_at": frappe.utils.add_to_date(None, hours=-2),
+															 "placed_at": frappe.utils.add_to_date(None, days=-45)})
+		self.assertGreaterEqual(request_due(), 1)
+		self.assertTrue(frappe.db.get_value("Restaurant Order", r["order"], "review_requested_at"))
+		c = frappe.get_doc({"doctype": "Restaurant Campaign", "title": "We miss you", "segment": "Lapsed customers", "lapsed_days": 30,
+							"pos_coupon": "WELCOME10", "message": "Hi {name}, use {coupon} at {restaurant}: {link}"}).insert()
+		self.assertGreaterEqual(online.campaign_preview(c.name)["count"], 1)
+		res = online.send_campaign(c.name)
+		self.assertGreaterEqual(res["sent"], 1)
+		self.assertEqual(frappe.db.get_value("Restaurant Campaign", c.name, "status"), "Sent")

@@ -24,6 +24,7 @@ scheduler_events = {
 	"daily_long": ["restaurant_os.services.procurement.daily"],
 	"hourly": ["restaurant_os.services.stock_deduction.retry_failed", "restaurant_os.integrations.tax_authority.fbr.retry_failed"],
 	"daily": ["restaurant_os.services.riders.purge_locations"],
+	"cron": {"*/10 * * * *": ["restaurant_os.services.reviews.request_due"]},
 }
 
 _INVOICE_EVENTS = {
