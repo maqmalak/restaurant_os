@@ -15,9 +15,10 @@ interface Line { row: string; item_code: string; item_name: string; qty: number;
   status: "Queued" | "Preparing" | "Ready" | "Served" | "Void"; round: number; station?: string; station_name?: string; image?: string }
 interface Card { name: string; order_no: string; status: string; column: Column; channel: string; order_type: string; table?: string;
   table_label?: string; guests?: number; customer_name?: string; notes?: string; created: string; updated: string; progress: number;
-  latest_round: number; items: Line[]; invoice?: string; stock_status?: string; rider_name?: string; delivery_by?: string }
+  latest_round: number; items: Line[]; invoice?: string; stock_status?: string; rider?: string; rider_name?: string; delivery_by?: string }
+interface RiderOpt { name: string; rider_name: string; status: string; active: number }
 interface Board { branch: string; branches: string[]; stations: { name: string; station_name: string; color?: string }[];
-  settings: { amber: number; red: number; sound: number }; now: string; cards: Card[]; counts: Record<Column, number>;
+  settings: { amber: number; red: number; sound: number }; now: string; cards: Card[]; counts: Record<Column, number>; riders: RiderOpt[];
   all_day: { item: string; qty: number }[] }
 type Column = "Placed" | "Preparing" | "Ready" | "Completed";
 
@@ -175,7 +176,8 @@ export default function KDSPage() {
                 <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
                   {cards.length === 0 && <p className="pt-10 text-center text-sm text-neutral-400">No orders</p>}
                   {cards.map((c) => (
-                    <TicketCard key={c.name} card={c} now={serverNow} amber={amber} red={red} busy={busy}
+                    <TicketCard key={c.name} card={c} now={serverNow} amber={amber} red={red} busy={busy} riders={board?.riders ?? []}
+                      onAssign={(rider) => void act(c.name, "assign_rider", { order: c.name, rider })}
                       onAdvance={() => void act(c.name, "advance", { order: c.name, station: station || undefined })}
                       onBump={(row) => void act(row, "bump_item", { order: c.name, row })}
                       onRecall={() => void act(c.name, "recall", { order: c.name })} />
@@ -213,8 +215,9 @@ export default function KDSPage() {
   );
 }
 
-function TicketCard({ card: c, now, amber, red, busy, onAdvance, onBump, onRecall }: {
-  card: Card; now: number; amber: number; red: number; busy: string | null; onAdvance: () => void; onBump: (row: string) => void; onRecall: () => void;
+function TicketCard({ card: c, now, amber, red, busy, riders, onAssign, onAdvance, onBump, onRecall }: {
+  card: Card; now: number; amber: number; red: number; busy: string | null; riders: RiderOpt[]; onAssign: (rider: string) => void;
+  onAdvance: () => void; onBump: (row: string) => void; onRecall: () => void;
 }) {
   const [menu, setMenu] = useState(false);
   const style = TYPE_STYLE[c.order_type] ?? TYPE_STYLE.Takeaway;
@@ -261,6 +264,18 @@ function TicketCard({ card: c, now, amber, red, busy, onAdvance, onBump, onRecal
             {c.column !== "Placed" && <button onClick={() => { setMenu(false); onRecall(); }} className="flex w-full items-center gap-2 px-3 py-2 hover:bg-neutral-100 dark:hover:bg-white/10"><RotateCcw className="h-4 w-4" /> Recall</button>}
             <button onClick={() => { setMenu(false); printHtml(ticketHtml(c)); }} className="flex w-full items-center gap-2 px-3 py-2 hover:bg-neutral-100 dark:hover:bg-white/10"><Printer className="h-4 w-4" /> Print ticket</button>
             <a href={`/desk/restaurant-order/${encodeURIComponent(c.name)}`} target="_blank" rel="noopener" className="flex w-full items-center gap-2 px-3 py-2 hover:bg-neutral-100 dark:hover:bg-white/10"><ListOrdered className="h-4 w-4" /> Open order</a>
+            {c.order_type === "Delivery" && c.delivery_by === "Own Rider" && !["Picked Up", "Out for Delivery", "Delivered"].includes(c.status) && (
+              <div className="border-t border-neutral-200 py-1 dark:border-white/10">
+                <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-neutral-500">{c.rider ? "Reassign rider" : "Assign rider"}</div>
+                {riders.length === 0 && <div className="px-3 py-1.5 text-xs text-neutral-500">No rider on duty</div>}
+                {riders.map((r) => (
+                  <button key={r.name} disabled={r.name === c.rider} onClick={() => { setMenu(false); onAssign(r.name); }}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-neutral-100 disabled:opacity-50 dark:hover:bg-white/10">
+                    <Bike className="h-4 w-4" /><span className="flex-1 truncate">{r.rider_name}</span><span className="text-[10px] text-neutral-500">{r.active ? `${r.active} active` : "free"}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

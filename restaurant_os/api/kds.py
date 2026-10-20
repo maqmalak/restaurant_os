@@ -41,7 +41,7 @@ def _card(o, rows, station, images, station_names):
 		"guests": o.guests, "customer_name": o.customer_name, "notes": o.notes, "priority": o.priority, "invoice": o.invoice,
 		"created": str(o.placed_at or o.creation), "updated": str(o.modified), "grand_total": o.grand_total,
 		"progress": round(done / len(lines) * 100), "latest_round": latest, "stock_status": o.stock_status,
-		"delivery_by": o.get("delivery_by"), "rider_name": (frappe.get_cached_value("Rider", o.rider, "rider_name") if o.get("rider") else None) or o.get("ext_rider_name"),
+		"delivery_by": o.get("delivery_by"), "rider": o.get("rider"), "rider_name": (frappe.get_cached_value("Rider", o.rider, "rider_name") if o.get("rider") else None) or o.get("ext_rider_name"),
 		"items": [{"row": r.name, "item_code": r.item_code, "item_name": r.item_name, "qty": r.qty, "uom": r.uom, "notes": r.notes,
 				   "modifiers": r.modifiers, "status": r.kds_status, "round": int(r.kitchen_round or 1), "station": r.station,
 				   "station_name": station_names.get(r.station), "image": images.get(r.item_code)} for r in sorted(lines, key=lambda r: r.idx)],
@@ -72,7 +72,11 @@ def board(branch: str | None = None, station: str | None = None, past: int = 0) 
 			for it in c["items"]:
 				if it["status"] in ("Queued", "Preparing"):
 					all_day[it["item_name"]] = all_day.get(it["item_name"], 0) + it["qty"]
+	riders = frappe.get_all("Rider", {"branch": branch, "disabled": 0, "status": ["!=", "Off Duty"]}, ["name", "rider_name", "status"], order_by="rider_name")
+	for r in riders:
+		r.active = frappe.db.count("Delivery Assignment", {"rider": r.name, "status": ["in", ["Accepted", "Picked Up"]]})
 	return {
+		"riders": riders,
 		"branch": branch, "branches": frappe.get_all("Restaurant Branch", {"disabled": 0}, pluck="name"), "stations": stations,
 		"settings": {"amber": cint(s.kds_amber_minutes) or 8, "red": cint(s.kds_red_minutes) or 15, "sound": cint(s.kds_sound)},
 		"now": str(now_datetime()), "cards": cards,
@@ -178,3 +182,12 @@ def ticket(order: str) -> dict:
 			"customer_name": doc.customer_name, "notes": doc.notes, "placed_at": str(doc.placed_at),
 			"items": [{"item_name": r.item_name, "qty": r.qty, "notes": r.notes, "round": r.kitchen_round, "station": r.station}
 					  for r in doc.items if r.kds_status != "Void"]}
+
+
+@frappe.whitelist(methods=["POST"])
+def assign_rider(order: str, rider: str) -> dict:
+	"""Assign / reassign a delivery to a rider from the KDS card (same as the dispatch map)."""
+	_check()
+	from restaurant_os.api.riders import assign
+
+	return assign(order, rider)

@@ -468,3 +468,14 @@ class TestRestaurantPOS(IntegrationTestCase):
 		payments.mock_pay(r["payment_url"].rsplit("/", 1)[1], "success")
 		t = track(r["tracking_key"])
 		self.assertEqual((t["payment_status"], t["cod_amount"]), ("Paid", 0))
+
+	def test_assign_rider_from_kds(self):
+		from restaurant_os.api import riders as api
+
+		rider = frappe.get_all("Rider", {"branch": masters.BRANCH}, ["name", "user"], limit=1)[0]
+		self._as(rider.user, api.set_duty, 1)
+		o = api.simulate_delivery_order()
+		self.assertTrue(any(r.name == rider.name for r in kds.board()["riders"]))
+		kds.assign_rider(o["order"], rider.name)
+		card = next(c for c in kds.board()["cards"] if c["name"] == o["order"])
+		self.assertEqual(card["rider"], rider.name)
