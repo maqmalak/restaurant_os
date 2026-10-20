@@ -1,4 +1,4 @@
-import { Banknote, ChefHat, ClipboardList, LayoutGrid, MapPin, Plug, Receipt, Settings2, SlidersVertical, Store, UtensilsCrossed } from "lucide-react";
+import { Banknote, ChefHat, ClipboardList, Trash2, LayoutGrid, MapPin, Plug, Receipt, Settings2, SlidersVertical, Store, UtensilsCrossed } from "lucide-react";
 import type { DocConfig } from "@/components/doc/doc-config";
 import { sec, colBreak, tab, data, int, float, check, text, link, select, req, ro, nameCol, textCol, numCol, yesNoCol, statusCol, currency, percent, dateTimeCol, moneyCol, datetime } from "@/components/doc/doc-helpers";
 
@@ -282,4 +282,38 @@ export const ORDER_CONFIG: DocConfig = {
   titleOf: (v) => (v.order_no ? `#${v.order_no} · ${v.channel ?? ""}` : "New Order"),
 };
 
-export const RESTAURANT_CONFIGS = [ORDER_CONFIG, BRANCH_CONFIG, STATION_CONFIG, TABLE_CONFIG, FLOOR_AREA_CONFIG, MODIFIER_GROUP_CONFIG, SETTINGS_CONFIG];
+export const WASTAGE_CONFIG: DocConfig = {
+  doctype: "Wastage Log",
+  base: "/restaurant/wastage",
+  singular: "Wastage Log",
+  plural: "Wastage",
+  subtitle: "Food thrown away, with a reason — issued out of the kitchen's stock on submit",
+  icon: Trash2,
+  submittable: true,
+  listFields: ["name", "branch", "posting_date", "reason", "total_cost", "stock_entry", "docstatus", "modified"],
+  columns: [nameCol("Wastage", (r) => r.reason), textCol("branch", "Branch"), dateTimeCol("posting_date", "Date"), moneyCol("total_cost", "Cost"), textCol("stock_entry", "Stock Entry")],
+  searchFields: ["name", "reason"],
+  filters: [{ field: "reason", label: "Reason", options: ["Spoiled", "Expired", "Burnt / Overcooked", "Dropped / Spilled", "Returned by Customer", "Staff Meal", "Testing / Tasting", "Other"] }],
+  dateField: "posting_date",
+  fields: [
+    sec("Wastage"),
+    req(link("branch", "Branch", "Restaurant Branch")),
+    req(link("warehouse", "Warehouse", "Warehouse")),
+    colBreak(),
+    req({ ...data("posting_date", "Date"), fieldtype: "Date" as const }),
+    req(select("reason", "Reason", ["Spoiled", "Expired", "Burnt / Overcooked", "Dropped / Spilled", "Returned by Customer", "Staff Meal", "Testing / Tasting", "Other"])),
+    sec("Totals"),
+    ro(currency("total_cost", "Total Cost")),
+    ro(link("stock_entry", "Stock Entry", "Stock Entry")),
+    colBreak(),
+    text("remarks", "Remarks"),
+  ],
+  children: [{
+    key: "items", label: "Items", doctype: "Wastage Log Item", minRows: 1,
+    columns: [req(link("item_code", "Ingredient / Item", "Item")), ro(data("item_name", "Item Name")), req(float("qty", "Qty")), ro(data("uom", "UOM")), ro(currency("amount", "Cost"))],
+  }],
+  defaults: () => ({ posting_date: new Date().toISOString().slice(0, 10), reason: "Spoiled", branch: "Gulberg", warehouse: "Gulberg Kitchen - SGR" }),
+  titleOf: (v) => (v.name ? `${v.name} · ${v.reason ?? ""}` : "New Wastage Log"),
+};
+
+export const RESTAURANT_CONFIGS = [ORDER_CONFIG, WASTAGE_CONFIG, BRANCH_CONFIG, STATION_CONFIG, TABLE_CONFIG, FLOOR_AREA_CONFIG, MODIFIER_GROUP_CONFIG, SETTINGS_CONFIG];

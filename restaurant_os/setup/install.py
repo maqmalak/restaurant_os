@@ -12,8 +12,18 @@ FBR_FIELDS = [
 ]
 
 
+STOCK_ENTRY_FIELDS = [
+	{"fieldname": "ros_section", "fieldtype": "Section Break", "label": "Restaurant", "insert_after": "remarks", "collapsible": 1},
+	{"fieldname": "ros_source", "fieldtype": "Select", "label": "Restaurant Source", "options": "\nRecipe\nWastage", "insert_after": "ros_section",
+	 "read_only": 1, "in_standard_filter": 1},
+	{"fieldname": "ros_reference_doctype", "fieldtype": "Link", "label": "Restaurant Reference Type", "options": "DocType", "insert_after": "ros_source", "read_only": 1},
+	{"fieldname": "ros_reference_name", "fieldtype": "Dynamic Link", "label": "Restaurant Reference", "options": "ros_reference_doctype",
+	 "insert_after": "ros_reference_doctype", "read_only": 1},
+]
+
+
 def custom_fields():
-	create_custom_fields({"POS Invoice": FBR_FIELDS, "Sales Invoice": FBR_FIELDS}, ignore_validate=True, update=True)
+	create_custom_fields({"POS Invoice": FBR_FIELDS, "Sales Invoice": FBR_FIELDS, "Stock Entry": STOCK_ENTRY_FIELDS}, ignore_validate=True, update=True)
 
 
 def after_install():

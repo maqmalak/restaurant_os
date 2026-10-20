@@ -216,6 +216,14 @@ def ensure_settings(branch, accounts):
 		s.update({"invoice_mode": "POS Invoice", "apply_sales_tax": 1, "sales_tax_rate": 18,
 				  "tax_included_in_price": "Tax added on top of item price", "stock_deduction_moment": "On Order Completion",
 				  "run_jobs_inline": 1, "aggregator_mode": "Mock", "messaging_mode": "Mock", "kds_sound": 1})
+	if not frappe.db.sql("select 1 from tabSingles where doctype = 'Restaurant Settings' and field = 'block_sold_out'"):
+		s.block_sold_out = 1                                  # settings from before this option: switch it on
+	if not s.aggregator_customer:
+		if not frappe.db.exists("Customer", "Foodpanda"):
+			frappe.get_doc({"doctype": "Customer", "customer_name": "Foodpanda", "customer_type": "Company",
+							"customer_group": leaf("Customer Group", "customer_group", "Commercial"),
+							"territory": leaf("Territory", "territory", "Pakistan")}).insert(ignore_permissions=True)
+		s.aggregator_customer = "Foodpanda"
 	if not s.fbr_mode:                                        # FBR reporting on, in Mock mode until the POS is registered
 		s.update({"fbr_enabled": 1, "fbr_mode": "Mock", "fbr_service_fee": 1})
 	if not s.payment_modes:

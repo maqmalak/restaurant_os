@@ -65,6 +65,10 @@ def receive(payload):
 	branch = data.pop("branch", None) or settings().default_branch
 	order = create_order(branch, data.pop("items"), channel="Foodpanda", client_order_uuid=f"foodpanda:{data['external_order_id']}", **data)
 	log("Foodpanda", payload, reference=("Restaurant Order", order.name))
+	from restaurant_os.services.delivery import invoice_quietly
+
+	if invoice_quietly(order.name):                           # accepted → invoiced to Foodpanda (it collects from the diner)
+		order.reload()
 	return order
 
 

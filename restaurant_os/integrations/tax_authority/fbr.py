@@ -92,7 +92,8 @@ def report(doc):
 
 def on_submit(doc, method=None):
 	"""Counter sales and returns are reported once (the shift's merged Sales Invoice is not — its POS Invoices were)."""
-	if not enabled() or not (doc.get("is_pos") and doc.get("pos_profile")) or doc.get("is_consolidated") or doc.get("fbr_invoice_number"):
+	counter_sale = doc.get("is_pos") and doc.get("pos_profile")
+	if not enabled() or not (counter_sale or doc.flags.get("ros_report_fbr")) or doc.get("is_consolidated") or doc.get("fbr_invoice_number"):
 		return
 	if doc.doctype == "Sales Invoice" and frappe.db.exists("POS Invoice", {"consolidated_invoice": doc.name}):
 		return

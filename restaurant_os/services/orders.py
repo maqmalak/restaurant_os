@@ -16,6 +16,7 @@ from frappe.utils import cint, flt, getdate, now_datetime, nowdate
 STAMP = {"Placed": "placed_at", "Accepted": "accepted_at", "Preparing": "preparing_at", "Ready": "ready_at",
 		 "Completed": "completed_at", "Delivered": "completed_at", "Cancelled": "cancelled_at", "Rejected": "cancelled_at"}
 DONE = ("Completed", "Delivered")
+STOCK_AT = ("Completed", "Picked Up", "Delivered")             # the food has left the kitchen
 OPEN = ("Placed", "Accepted", "Preparing", "Ready")
 
 
@@ -52,7 +53,7 @@ def set_status(order, status, save=True):
 		order.flags.ignore_permissions = True
 		order.save()
 	publish(order)
-	if status in DONE and settings().stock_deduction_moment == "On Order Completion":
+	if status in STOCK_AT and settings().stock_deduction_moment == "On Order Completion":
 		order.flags.ros_deduct = True                         # RestaurantOrder.on_update runs it once the order is saved
 	return order
 

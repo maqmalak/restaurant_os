@@ -114,7 +114,16 @@ def advance(order: str, station: str | None = None) -> dict:
 		doc.save()
 		return {"status": doc.status}
 	else:
-		frappe.throw(_("Order {0} is already {1}.").format(doc.order_no, doc.status))
+		from restaurant_os.services import delivery
+
+		nxt = delivery.next_status(doc)
+		if not nxt:
+			frappe.throw(_("Order {0} is already {1}.").format(doc.order_no, doc.status))
+		svc.set_status(doc, nxt, save=False)
+		doc.save()
+		if nxt == "Delivered" and not doc.invoice:
+			delivery.invoice_quietly(doc.name)                # cash on delivery: invoiced to the customer now
+		return {"status": doc.status}
 	svc.refresh_status(doc)
 	doc.save()
 	svc.publish(doc)

@@ -80,6 +80,9 @@ def send(table: str, items: str, notes: str | None = None) -> dict:
 	lines = [i for i in json.loads(items) if flt(i.get("qty")) > 0]
 	if not lines:
 		frappe.throw(_("Add at least one item."))
+	from restaurant_os.services.availability import check
+
+	check(t.branch, lines)
 	price_list = frappe.get_cached_value("POS Profile", _profile_for(t.branch), "selling_price_list")
 	rows = [{"item_code": i["item_code"], "item_name": frappe.get_cached_value("Item", i["item_code"], "item_name"), "qty": flt(i["qty"]),
 			 "uom": frappe.get_cached_value("Item", i["item_code"], "stock_uom"), "rate": _price(i["item_code"], price_list),

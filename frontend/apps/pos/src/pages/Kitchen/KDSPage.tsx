@@ -37,6 +37,9 @@ const FOOT: Record<Column, string> = {
   Completed: "bg-green-600 text-white",
 };
 const NEXT: Record<Column, string> = { Placed: "Start cooking", Preparing: "Mark ready", Ready: "Serve / hand over", Completed: "" };
+/** Delivery orders keep moving after the kitchen: Picked Up → Out for Delivery (own riders) → Delivered. */
+const DISPATCH = ["Picked Up", "Out for Delivery"];
+const nextDispatch = (c: Card) => (c.status === "Out for Delivery" || c.channel === "Foodpanda" ? "Mark delivered" : "Out for delivery");
 
 const parse = (s: string) => new Date(s.replace(" ", "T"));
 function ago(ms: number) {
@@ -95,6 +98,10 @@ export default function KDSPage() {
   const board = data?.message;
   const offset = useMemo(() => (board ? parse(board.now).getTime() - Date.now() : 0), [board]);
   useFrappeEventListener("ros_kds", () => void mutate());
+  const { data: avail, mutate: mutateAvail } = useFrappeGetCall<{ message: { sold_out: { item_code: string; item_name: string }[]; items: { item_code: string; item_name: string; portions: number }[] } }>(
+    "restaurant_os.services.availability.board", { branch: branch || undefined }, `ros.avail.${branch}`, { refreshInterval: 60000 });
+  useFrappeEventListener("ros_availability", () => void mutateAvail());
+  const low = (avail?.message?.items ?? []).filter((i) => i.portions > 0 && i.portions <= 5);
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
   // sound on tickets we haven't seen yet
@@ -134,7 +141,8 @@ export default function KDSPage() {
           </select>
         )}
         <button onClick={() => setAllDay((v) => !v)} className={cn("hidden h-9 items-center gap-1.5 rounded-md px-3 text-xs font-semibold md:inline-flex", allDay ? "bg-primary text-primary-foreground" : "hover:bg-neutral-100 dark:hover:bg-white/10")}>
-          <ListOrdered className="h-4 w-4" /> All day</button>
+          <ListOrdered className="h-4 w-4" /> All day · 86
+          {(avail?.message?.sold_out.length ?? 0) > 0 && <span className="rounded-full bg-red-600 px-1.5 text-[10px] text-white">{avail!.message.sold_out.length}</span>}</button>
         <button onClick={() => setPast((v) => !v)} className={cn("h-9 rounded-md px-3 text-xs font-bold uppercase tracking-wide", past ? "bg-violet-700 text-white" : "bg-violet-900 text-white hover:bg-violet-800")}>
           <History className="mr-1 inline h-4 w-4" />{past ? "Today only" : "Load past orders"}</button>
         <button onClick={() => setSound((v) => !v)} className="rounded-lg p-2 hover:bg-neutral-100 dark:hover:bg-white/10" title={sound ? "Mute" : "Sound on"}>
@@ -179,6 +187,18 @@ export default function KDSPage() {
         </div>
         {allDay && (
           <aside className="hidden w-64 shrink-0 overflow-y-auto border-l border-neutral-200 bg-white p-3 dark:border-white/10 dark:bg-neutral-900 md:block">
+            <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-red-600">86 — sold out</h3>
+            {(avail?.message?.sold_out ?? []).length === 0 ? <p className="mb-4 text-sm text-neutral-400">Everything available</p> : (
+              <ul className="mb-4 space-y-1">{avail!.message.sold_out.map((s) => (
+                <li key={s.item_code} className="rounded-lg bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-700 line-through dark:bg-red-500/15 dark:text-red-300">{s.item_name}</li>
+              ))}</ul>
+            )}
+            {low.length > 0 && <>
+              <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-amber-600">Running low (portions)</h3>
+              <ul className="mb-4 space-y-1">{low.map((s) => (
+                <li key={s.item_code} className="flex justify-between rounded-lg bg-amber-50 px-2.5 py-1.5 text-sm dark:bg-amber-500/15"><span className="truncate">{s.item_name}</span><b>{s.portions}</b></li>
+              ))}</ul>
+            </>}
             <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-neutral-500">All day — to cook</h3>
             {(board?.all_day ?? []).length === 0 ? <p className="text-sm text-neutral-400">Nothing waiting</p> : (
               <ul className="space-y-1.5">{board!.all_day.map((a) => (
@@ -202,6 +222,7 @@ function TicketCard({ card: c, now, amber, red, busy, onAdvance, onBump, onRecal
   const updated = parse(c.updated).getTime();
   const age = now - created;
   const open = c.column !== "Completed";
+  const dispatch = DISPATCH.includes(c.status);           // a delivery card past the kitchen, still to be delivered
   const ageCls = !open ? "" : age >= red ? "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300" : age >= amber ? "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300" : "";
   const multi = c.latest_round > 1;
   const fresh = multi ? c.items.filter((i) => i.round === c.latest_round) : c.items;
@@ -265,11 +286,13 @@ function TicketCard({ card: c, now, amber, red, busy, onAdvance, onBump, onRecal
         {older.map(line)}
       </div>
       {c.notes && <div className="mx-3 mb-2 rounded-md bg-red-50 px-2 py-1.5 text-xs font-semibold text-red-700 dark:bg-red-500/15 dark:text-red-300">{c.notes}</div>}
-      <div className={cn("flex items-center gap-2 px-3 py-2", FOOT[c.column])}>
+      {c.invoice && c.order_type === "Delivery" && <div className="mx-3 mb-2 text-[11px] text-neutral-500">Invoice {c.invoice}</div>}
+      <div className={cn("flex items-center gap-2 px-3 py-2", dispatch ? "bg-sky-700 text-white hover:bg-sky-600" : FOOT[c.column])}>
         <button onClick={() => printHtml(ticketHtml(c))} className="rounded-full bg-white/90 p-1.5 text-neutral-900" title="Print ticket"><Printer className="h-4 w-4" /></button>
-        <button disabled={!open || busy === c.name} onClick={onAdvance} title={NEXT[c.column]}
+        <button disabled={(!open && !dispatch) || busy === c.name} onClick={onAdvance} title={dispatch ? nextDispatch(c) : NEXT[c.column]}
           className="flex-1 text-center text-base font-bold disabled:cursor-default">{busy === c.name ? "…" : c.column === "Completed" ? c.status : c.status === "Accepted" ? "Placed" : c.status}</button>
-        {open && <button disabled={busy === c.name} onClick={onAdvance} className="rounded-full bg-white/90 p-1.5 text-neutral-900" title={NEXT[c.column]}><ChefHat className="h-4 w-4" /></button>}
+        {(open || dispatch) && <button disabled={busy === c.name} onClick={onAdvance} className="rounded-full bg-white/90 p-1.5 text-neutral-900"
+          title={dispatch ? nextDispatch(c) : NEXT[c.column]}>{dispatch ? <Bike className="h-4 w-4" /> : <ChefHat className="h-4 w-4" />}</button>}
       </div>
     </article>
   );

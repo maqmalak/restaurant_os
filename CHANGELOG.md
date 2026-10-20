@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-21 — Phase 5 (stock control) + delivery completion
+
+- **Delivery orders finished end to end**: Foodpanda orders are invoiced on acceptance to the Foodpanda customer (Foodpanda
+  price list, FBR-reported, a receivable from Foodpanda); KDS Ready → Picked Up → (Out for Delivery →) Delivered; own
+  cash-on-delivery orders are invoiced at Delivered (cash received at the counter via Receive payment); ingredients leave
+  the kitchen at Picked Up.
+- **Sold-out menu items**: portions left per dish from kitchen stock and its recipe; the POS terminal and table orders show
+  the count and lock a dish at 0 ("SOLD OUT"); sales and table rounds of sold-out dishes are refused (setting); changes are
+  pushed to Foodpanda (mock) and shown on the KDS "86" list with running-low items.
+- **Wastage Log** (reason, items, cost) → Material Issue from the kitchen; React screen + desk.
+- **Ingredient Variance** report (script report + React page): opening, received, recipe usage, wastage, other issues,
+  expected vs counted (Stock Reconciliation), variance qty / % / value — the theft & waste control.
+- Stock Entries are tagged with their source (Recipe / Wastage + reference) for the report.
+- Tests: 17 backend (+ Foodpanda invoice/delivery, cash on delivery, sold-out, wastage + variance), Vitest — all passing.
+
 ## 2026-10-20 — Phase 3 + 4 core: orders, KDS, table map, tax, FBR, integrations
 
 - **Restaurant Order** (operational order, every channel) with its state machine; every counter sale opens one, lines routed to

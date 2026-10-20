@@ -33,7 +33,11 @@ interface Profile {
   payments: { mode_of_payment: string; default: number }[]; item_groups: string[];
 }
 interface Ctx { profiles: { name: string; company: string }[]; shift: { name: string; pos_profile: string; period_start_date: string } | null; profile: Profile | null; cashier: string }
-interface Item { item_code: string; item_name: string; price_list_rate: number; actual_qty: number; uom: string; stock_uom?: string; item_image?: string; is_stock_item?: number; batch_no?: string; serial_no?: string }
+interface Item { item_code: string; item_name: string; price_list_rate: number; actual_qty: number; uom: string; stock_uom?: string; item_image?: string; is_stock_item?: number; batch_no?: string; serial_no?: string;
+  /** Restaurant OS: a recipe dish — actual_qty is the portions the kitchen can still make. */
+  ros_recipe?: number }
+/** Has a count to show / lock on: stock items, and recipe dishes (portions left). */
+const counted = (i: Item) => !!i.is_stock_item || !!i.ros_recipe;
 interface Line {
   key: string; item_code: string; item_name: string; qty: number; uom: string; price_list_rate: number; rate?: number;
   discount_percentage?: number; stock: number; batch_no?: string; serial_no?: string;
@@ -147,7 +151,7 @@ export default function POSTerminalPage() {
     profile && !offline ? { start: 0, page_length: 80, price_list: profile.price_list, item_group: group, pos_profile: profile.name, search_term: debounced } : undefined,
     profile && !offline ? `pos.items.${profile.name}.${group}.${debounced}` : null, { keepPreviousData: true });
   const allItems: Item[] = offline ? searchBundle(bundle, debounced, group) : unwrap<{ items: Item[] }>(itemData)?.items ?? [];
-  const items = profile?.hide_unavailable_items ? allItems.filter((i) => !i.is_stock_item || i.actual_qty > 0) : allItems;
+  const items = profile?.hide_unavailable_items ? allItems.filter((i) => !counted(i) || i.actual_qty > 0) : allItems;
   const { data: offerData } = useFrappeGetCall<{ message: unknown[] }>("restaurant_os.api.pos.offers", profile && !offline ? { pos_profile: profile.name } : undefined, profile && !offline ? `pos.offers.${profile.name}` : null);
   const offerCount = (unwrap<unknown[]>(offerData) ?? []).length;
   const { data: presetData } = useFrappeGetCall<{ message: QtyPresets }>("restaurant_os.api.pos.qty_presets", profile && !offline ? { pos_profile: profile.name } : undefined,
@@ -381,7 +385,7 @@ export default function POSTerminalPage() {
             <div className="grid min-h-0 flex-1 auto-rows-max grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-3 overflow-y-auto p-1 pr-1.5 scrollbar-thin">
               {items.map((it) => {
                 const inCart = lines.filter((l) => l.item_code === it.item_code).reduce((a, l) => a + l.qty, 0);
-                const out = !!it.is_stock_item && it.actual_qty <= 0;
+                const out = counted(it) && it.actual_qty <= 0;
                 return (
                   <button key={it.item_code} type="button" onClick={() => void add(it)} disabled={out}
                     className={cn("group relative flex flex-col overflow-hidden rounded-2xl border bg-card text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-45",
@@ -395,9 +399,9 @@ export default function POSTerminalPage() {
                           <span className={cn("flex h-full w-full items-center justify-center bg-gradient-to-br text-4xl font-extrabold text-white/90", tint(it.item_code))}>{initials(it.item_name)}</span>
                         )}
                         <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/45 to-transparent" />
-                        {!!it.is_stock_item && (
-                          <span className={cn("absolute right-2 top-2 min-w-7 rounded-lg px-1.5 py-0.5 text-center text-[11px] font-bold tabular-nums text-white shadow", out ? "bg-rose-500" : "bg-emerald-500")}>
-                            {it.actual_qty > 999 ? `${Math.floor(it.actual_qty / 1000)}k` : Math.floor(it.actual_qty)}</span>
+                        {counted(it) && (
+                          <span title={it.ros_recipe ? "Portions the kitchen can still make" : "In stock"} className={cn("absolute right-2 top-2 min-w-7 rounded-lg px-1.5 py-0.5 text-center text-[11px] font-bold tabular-nums text-white shadow", out ? "bg-rose-500" : "bg-emerald-500")}>
+                            {out && it.ros_recipe ? "SOLD OUT" : it.actual_qty > 999 ? `${Math.floor(it.actual_qty / 1000)}k` : Math.floor(it.actual_qty)}</span>
                         )}
                         {inCart > 0 && <span className="absolute left-2 top-2 flex h-7 min-w-7 items-center justify-center rounded-full bg-primary px-2 text-xs font-bold text-primary-foreground shadow-lg">{inCart}</span>}
                       </span>
@@ -427,7 +431,7 @@ export default function POSTerminalPage() {
                       <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[10px] font-bold text-white", tint(it.item_code))}>{initials(it.item_name)}</span>
                       <span className="min-w-0"><span className="block truncate font-medium">{it.item_name}</span><span className="block text-[11px] text-muted-foreground">{it.item_code}</span></span></div></td>
                     <td className="text-xs text-muted-foreground">{it.uom || it.stock_uom}</td>
-                    <td className="text-right">{it.is_stock_item ? <span className={cn("rounded-md px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-white", it.actual_qty > 0 ? "bg-emerald-500" : "bg-rose-500")}>{Math.floor(it.actual_qty)}</span> : "—"}</td>
+                    <td className="text-right">{counted(it) ? <span className={cn("rounded-md px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-white", it.actual_qty > 0 ? "bg-emerald-500" : "bg-rose-500")}>{Math.floor(it.actual_qty)}</span> : "—"}</td>
                     <td className="text-right font-bold tabular-nums text-primary">{money(it.price_list_rate)}</td>
                     <td className="w-10 pr-2 text-right"><span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary"><Plus className="h-3.5 w-3.5" /></span></td>
                   </tr>))}</tbody>

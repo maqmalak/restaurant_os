@@ -50,6 +50,15 @@ Doc events: `Sales Invoice` / `POS Invoice` `on_submit` → `notify_invoice` (No
 `foodpanda_order` (guest webhook, HMAC-checked in Live), `simulate_foodpanda_order(items)` (Mock), `test_whatsapp(to, text)`.
 FBR reporting runs on invoice submit (`integrations/tax_authority/fbr.py`); every call is an Integration Request.
 
+## Stock control
+
+`restaurant_os.services.availability.board(branch?)` — portions left per menu item, sold-out list. ERPNext's
+`point_of_sale.get_items` is wrapped (hooks `override_whitelisted_methods`) to add `ros_recipe` + `actual_qty` (portions) for
+recipe dishes. Script report **Ingredient Variance** (branch, from_date, to_date). Wastage Log submit → Material Issue.
+Delivery: `kds.advance` continues Picked Up → Out for Delivery → Delivered (Foodpanda: Picked Up → Delivered);
+`services.delivery.invoice_for_order` (Foodpanda on accept, own delivery at Delivered).
+
 ## Realtime events
 
-`ros_kds` {event, order, branch, status} — any order change (KDS and table map refresh); `ros_tables` {table, branch}.
+`ros_kds` {event, order, branch, status} — any order change (KDS and table map refresh); `ros_tables` {table, branch};
+`ros_availability` {branch, sold_out, changed} — a dish sold out / back.

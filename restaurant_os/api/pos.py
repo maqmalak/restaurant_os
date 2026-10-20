@@ -397,6 +397,11 @@ def submit_invoice(data: str) -> dict:
 	if not shift and not data.get("hold"):
 		frappe.throw(_("Open a shift before selling."))
 	profile = frappe.get_doc("POS Profile", data["pos_profile"])
+	if not data.get("hold") and not data.get("offline_id") and not data.get("restaurant_order"):   # offline sales already happened
+		from restaurant_os.restaurant_os.doctype.restaurant_branch.restaurant_branch import branch_for_pos_profile
+		from restaurant_os.services.availability import check
+
+		check(branch_for_pos_profile(profile.name), data.get("items") or [])
 	if data.get("draft") and frappe.db.exists(dt, {"name": data["draft"], "docstatus": 0}):
 		frappe.delete_doc(dt, data["draft"], ignore_permissions=True)
 	inv = _build_invoice(data, profile, shift)

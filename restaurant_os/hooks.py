@@ -31,4 +31,13 @@ _INVOICE_EVENTS = {
 				  "restaurant_os.services.orders.order_from_invoice"],
 	"on_cancel": "restaurant_os.services.orders.cancel_from_invoice",
 }
-doc_events = {"Sales Invoice": _INVOICE_EVENTS, "POS Invoice": _INVOICE_EVENTS}
+doc_events = {
+	"Sales Invoice": _INVOICE_EVENTS,
+	"POS Invoice": _INVOICE_EVENTS,
+	"Bin": {"on_update": "restaurant_os.services.availability.on_bin_update"},   # kitchen stock moved → sold-out refresh
+}
+
+# the POS terminal and table orders read menu items through ERPNext's get_items: add portions left for recipe dishes
+override_whitelisted_methods = {
+	"erpnext.selling.page.point_of_sale.point_of_sale.get_items": "restaurant_os.services.availability.get_items",
+}

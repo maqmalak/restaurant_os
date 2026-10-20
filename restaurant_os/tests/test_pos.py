@@ -151,7 +151,8 @@ class TestRestaurantPOS(IntegrationTestCase):
 		from restaurant_os.integrations.aggregators.foodpanda import simulate_order
 
 		order = simulate_order(2)
-		self.assertEqual((order.channel, order.order_type, order.status), ("Foodpanda", "Delivery", "Accepted"))
+		self.assertEqual((order.channel, order.order_type), ("Foodpanda", "Delivery"))
+		self.assertIn(order.status, ("Accepted", "Preparing", "Ready"))   # lines no station makes start Ready
 		self.assertTrue(frappe.db.exists("Integration Request", {"integration_request_service": "Foodpanda"}))
 
 	# ---------------------------------------------------------------- dine-in
@@ -198,3 +199,70 @@ class TestRestaurantPOS(IntegrationTestCase):
 		self.assertEqual(rec["qr_value"], inv.fbr_invoice_number)
 		self.assertTrue(any(t["description"] == "FBR POS Service Fee" and flt(t["tax_amount"]) == 1 for t in rec["taxes"]))
 		self.assertTrue(frappe.db.exists("Integration Request", {"integration_request_service": "FBR", "reference_docname": r["name"]}))
+
+	# ---------------------------------------------------------------- delivery
+	def test_foodpanda_invoiced_on_accept_and_delivered(self):
+		from restaurant_os.integrations.aggregators.foodpanda import simulate_order
+
+		order = simulate_order(1)
+		self.assertEqual(order.invoice_doctype, "Sales Invoice")
+		si = frappe.db.get_value("Sales Invoice", order.invoice, ["customer", "docstatus", "fbr_status", "selling_price_list"], as_dict=True)
+		self.assertEqual((si.customer, si.docstatus, si.selling_price_list), ("Foodpanda", 1, "Foodpanda"))
+		self.assertEqual(si.fbr_status, "Posted")
+		for expected in ("Preparing", "Ready", "Picked Up"):
+			self.assertEqual(kds.advance(order.name)["status"], expected)
+		self.assertIn(frappe.db.get_value("Restaurant Order", order.name, "stock_status"), ("Posted", "Not Needed"))
+		self.assertEqual(kds.advance(order.name)["status"], "Delivered")   # Foodpanda's rider: no Out for Delivery step
+
+	def test_own_delivery_cash_on_delivery(self):
+		from restaurant_os.services.orders import create_order
+
+		order = create_order(masters.BRANCH, [{"item_code": "Chicken Tikka", "qty": 1, "rate": 650}], channel="Web", order_type="Delivery",
+							 customer=masters.WALK_IN)
+		for expected in ("Preparing", "Ready", "Picked Up", "Out for Delivery"):
+			kds.advance(order.name)
+		self.assertFalse(frappe.db.get_value("Restaurant Order", order.name, "invoice"))
+		self.assertEqual(kds.advance(order.name)["status"], "Delivered")
+		inv = frappe.db.get_value("Restaurant Order", order.name, "invoice")
+		self.assertTrue(inv)
+		self.assertGreater(flt(frappe.db.get_value("Sales Invoice", inv, "outstanding_amount")), 0, "cash is received at the counter later")
+
+	# ---------------------------------------------------------------- availability, wastage, variance
+	def _issue_all(self, item):
+		kitchen = masters.acct("Gulberg Kitchen")
+		qty = flt(frappe.db.get_value("Bin", {"item_code": item, "warehouse": kitchen}, "actual_qty"))
+		se = frappe.get_doc({"doctype": "Stock Entry", "stock_entry_type": "Material Issue", "purpose": "Material Issue", "company": masters.COMPANY,
+							 "items": [{"item_code": item, "qty": qty, "s_warehouse": kitchen}]})
+		se.insert(); se.submit()
+
+	def test_sold_out_dish_is_locked_and_refused(self):
+		from restaurant_os.services.availability import get_items, portions
+
+		self._issue_all("Mutton")
+		self.assertEqual(portions(masters.BRANCH, ["Mutton Chops"])["Mutton Chops"], 0)
+		items = get_items(0, 100, "Standard Selling", "", PROFILE, "Mutton")["items"]
+		chops = next(i for i in items if i["item_code"] == "Mutton Chops")
+		self.assertEqual((chops["ros_recipe"], chops["actual_qty"]), (1, 0))
+		with self.assertRaises(frappe.ValidationError):
+			self.pay([("Mutton Chops", 1)])
+
+	def test_wastage_and_variance(self):
+		from restaurant_os.restaurant_os.report.ingredient_variance.ingredient_variance import execute
+
+		kitchen = masters.acct("Gulberg Kitchen")
+		before = flt(frappe.db.get_value("Bin", {"item_code": "Onion", "warehouse": kitchen}, "actual_qty"))
+		w = frappe.get_doc({"doctype": "Wastage Log", "branch": masters.BRANCH, "warehouse": kitchen, "reason": "Spoiled",
+							"items": [{"item_code": "Onion", "qty": 2}]})
+		w.insert(); w.submit()
+		self.assertEqual(frappe.db.get_value("Stock Entry", w.stock_entry, "ros_source"), "Wastage")
+		self.assertGreater(flt(w.total_cost), 0)
+		# physical count finds 1 kg less than the books → −1 variance
+		rate = flt(frappe.db.get_value("Bin", {"item_code": "Onion", "warehouse": kitchen}, "valuation_rate"))
+		sr = frappe.get_doc({"doctype": "Stock Reconciliation", "company": masters.COMPANY, "purpose": "Stock Reconciliation",
+							 "items": [{"item_code": "Onion", "warehouse": kitchen, "qty": before - 3, "valuation_rate": rate}]})
+		sr.insert(); sr.submit()
+		_cols, data = execute({"branch": masters.BRANCH})
+		onion = next(r for r in data if r.item_code == "Onion")
+		self.assertAlmostEqual(flt(onion.wastage), 2, places=3)
+		self.assertAlmostEqual(flt(onion.variance), -1, places=3)
+		self.assertLess(flt(onion.variance_value), 0)

@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Armchair, Award, BadgePercent, ClipboardList, MonitorPlay, ReceiptText, Banknote, ChefHat, DoorClosed, DoorOpen, LayoutDashboard, LayoutGrid, PackagePlus, Settings2, ShoppingCart,
+  Armchair, Scale, Trash2, Award, BadgePercent, ClipboardList, MonitorPlay, ReceiptText, Banknote, ChefHat, DoorClosed, DoorOpen, LayoutDashboard, LayoutGrid, PackagePlus, Settings2, ShoppingCart,
   SlidersHorizontal, SlidersVertical, Store, Ticket, UtensilsCrossed, Wallet,
 } from "lucide-react";
 
@@ -48,6 +48,8 @@ export const POS_NAVIGATION: NavGroup[] = [
     title: "Restaurant",
     items: [
       { label: "Orders", to: "/restaurant/orders", icon: ClipboardList },
+      { label: "Wastage", to: "/restaurant/wastage", icon: Trash2 },
+      { label: "Ingredient Variance", to: "/restaurant/variance", icon: Scale },
       { label: "Branches", to: "/restaurant/branches", icon: Store },
       { label: "Kitchen Stations", to: "/restaurant/stations", icon: ChefHat },
       { label: "Tables", to: "/restaurant/tables", icon: UtensilsCrossed },
@@ -74,6 +76,8 @@ const ROUTE_TITLES: Record<string, string> = {
   new: "New",
   restaurant: "Restaurant",
   orders: "Orders",
+  wastage: "Wastage",
+  variance: "Ingredient Variance",
   sales: "Sales Invoices",
   kds: "Kitchen Display",
   branches: "Branches",

@@ -40,7 +40,8 @@ def post_for_order(order):
 	try:
 		se = frappe.get_doc({
 			"doctype": "Stock Entry", "stock_entry_type": "Material Issue", "purpose": "Material Issue", "company": doc.company,
-			"posting_date": nowdate(), "from_warehouse": warehouse,
+			"posting_date": nowdate(), "from_warehouse": warehouse, "ros_source": "Recipe",
+			"ros_reference_doctype": "Restaurant Order", "ros_reference_name": doc.name,
 			"remarks": f"Recipe ingredients for Restaurant Order {doc.name} (#{doc.order_no}){f' — {doc.invoice}' if doc.invoice else ''}",
 			"items": [{"item_code": code, "qty": flt(qty, 6), "uom": uom, "stock_uom": uom, "conversion_factor": 1, "s_warehouse": warehouse,
 					   "cost_center": frappe.db.get_value("Restaurant Branch", doc.branch, "cost_center")}

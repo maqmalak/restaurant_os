@@ -39,6 +39,7 @@
   "stock_deduction_moment",
   "column_break_stock",
   "run_jobs_inline",
+  "block_sold_out",
   "section_kds",
   "kds_amber_minutes",
   "kds_sound",
@@ -53,6 +54,7 @@
   "low_rating_alert",
   "section_foodpanda",
   "aggregator_mode",
+  "aggregator_customer",
   "foodpanda_base_url",
   "foodpanda_chain_code",
   "column_break_fp",
@@ -234,6 +236,13 @@
    "description": "For a bench without a worker: stock deduction and notifications run in the request instead of the queue"
   },
   {
+   "fieldname": "block_sold_out",
+   "fieldtype": "Check",
+   "label": "Block Sold-out Items",
+   "default": "1",
+   "description": "A dish whose ingredients can't cover the portion can't be sold (POS, tables); it shows as sold out everywhere"
+  },
+  {
    "fieldname": "section_kds",
    "fieldtype": "Section Break",
    "label": "Kitchen Display"
@@ -314,6 +323,13 @@
    "options": "Mock\nLive",
    "default": "Mock",
    "description": "Mock: orders come from the built-in simulator, nothing leaves this server"
+  },
+  {
+   "fieldname": "aggregator_customer",
+   "fieldtype": "Link",
+   "label": "Invoice Foodpanda Orders To",
+   "options": "Customer",
+   "description": "Foodpanda collects from the diner, so its orders are invoiced to this customer on acceptance (a receivable from Foodpanda)"
   },
   {
    "fieldname": "foodpanda_base_url",
