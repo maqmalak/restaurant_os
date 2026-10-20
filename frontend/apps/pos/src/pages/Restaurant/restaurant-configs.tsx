@@ -428,12 +428,12 @@ export const CAMPAIGN_CONFIG: DocConfig = {
   }],
   actions: [
     { label: "Preview recipients", icon: Users, show: (c) => !c.isNew, run: async (c) => {
-      const r = await postCall<{ count: number; sample: { name: string; mobile: string }[] }>("restaurant_os.api.online.campaign_preview", { name: c.name });
+      const r = await postCall<{ count: number; sample: { name: string; mobile: string }[] }>("restaurant_os.api.online.campaign_preview", { campaign: c.name });
       toast(`${r.count} customer(s) in this segment${r.sample.length ? `: ${r.sample.slice(0, 5).map((x) => x.name).join(", ")}${r.count > 5 ? "…" : ""}` : ""}`, { duration: 6000 });
     } },
     { label: "Send campaign", icon: Send, show: (c) => !c.isNew && c.values.status !== "Sent", run: async (c) => {
       if (!window.confirm("Send this campaign to every customer in the segment now?")) return;
-      const r = await postCall<{ sent: number }>("restaurant_os.api.online.send_campaign", { name: c.name });
+      const r = await postCall<{ sent: number }>("restaurant_os.api.online.send_campaign", { campaign: c.name });
       toast.success(`Sent to ${r.sent} customer(s)`); c.reload();
     } },
   ],

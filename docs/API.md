@@ -77,7 +77,7 @@ Dispatch (staff): `dispatch(branch?)`, `assign(order, rider)`, `handover(rider, 
 | `quote(data)` / `place_order(data)` | guest | also take `coupon_code`, `phone`, `redeem_points`; quote returns `offers`, `coupon`, `discount`, `points`, `points_value`, `to_pay`, free `lines` |
 | `loyalty(phone)` | guest | points, value, enrolled, can_redeem |
 | `review(key, data)` | guest | rate a delivered / collected order once (`rating_overall` 1–5, `rating_food`, `rating_delivery`, `comment`, `items[]`) |
-| `campaign_preview(name)` / `send_campaign(name)` | Sales / System Manager | recipients of a Restaurant Campaign; send it |
+| `campaign_preview(campaign)` / `send_campaign(campaign)` | Sales / System Manager | recipients of a Restaurant Campaign; send it |
 | `send_review_requests()` | Sales / System Manager | run the review-request job now |
 
 ## Owner analytics — `restaurant_os.api.analytics` (managers)
