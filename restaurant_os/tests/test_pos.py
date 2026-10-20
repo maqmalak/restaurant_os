@@ -281,6 +281,15 @@ class TestRestaurantPOS(IntegrationTestCase):
 		finally:
 			frappe.set_user("Administrator")
 
+	def _free_riders(self):
+		"""Earlier tests leave deliveries on the riders (and offers waiting): clear them so this test starts fresh."""
+		for da in frappe.get_all("Delivery Assignment", {"status": ["in", ["Offered", "Accepted", "Picked Up"]]}, ["name", "order"]):
+			frappe.db.set_value("Delivery Assignment", da.name, "status", "Cancelled")
+			frappe.db.set_value("Restaurant Order", da.order, {"delivery_assignment": None, "rider": None})
+		for name in frappe.get_all("Rider", {"status": "On Delivery"}, pluck="name"):
+			frappe.db.set_value("Rider", name, "status", "Available")
+		frappe.db.set_value("Restaurant Order", {"status": "Ready", "order_type": "Delivery"}, "delivery_by", "Foodpanda Rider")   # nothing else waiting
+
 	def _ready(self, order):
 		while frappe.db.get_value("Restaurant Order", order, "status") != "Ready":
 			kds.advance(order)
@@ -289,6 +298,7 @@ class TestRestaurantPOS(IntegrationTestCase):
 		from restaurant_os.api import riders as api
 
 		riders = frappe.get_all("Rider", {"branch": masters.BRANCH}, ["name", "user"], order_by="rider_name")
+		self._free_riders()
 		for r in riders:
 			self._as(r.user, api.set_duty, 1)
 		o = api.new_delivery_order(json.dumps({"customer_name": "Test Diner", "phone": "+92 300 0000001", "address": "House 1, Gulberg",

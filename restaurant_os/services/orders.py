@@ -49,17 +49,21 @@ def set_status(order, status, save=True):
 	field = STAMP.get(status)
 	if field and not order.get(field):
 		order.set(field, now_datetime())
-	if save:
-		order.flags.ignore_permissions = True
-		order.save()
-	publish(order)
+	# flags first: RestaurantOrder.on_update acts on them when this save (or the caller's, with save=False) lands
 	if status in STOCK_AT and settings().stock_deduction_moment == "On Order Completion":
-		order.flags.ros_deduct = True                         # RestaurantOrder.on_update runs it once the order is saved
+		order.flags.ros_deduct = True                         # issue the recipe ingredients
 	if order.order_type == "Delivery":
 		from restaurant_os.services import riders
 
 		if status == "Ready" and riders.offer_due(order):
-			order.flags.ros_assign = True                     # offered to a rider once saved (on_update)
+			order.flags.ros_assign = True                     # offer it to a rider
+	if save:
+		order.flags.ignore_permissions = True
+		order.save()
+	publish(order)
+	if order.order_type == "Delivery":
+		from restaurant_os.services import riders
+
 		riders.aggregator_rider_update(order)
 	return order
 
@@ -114,10 +118,19 @@ def create_order(branch, items, channel="POS", order_type=None, customer=None, c
 	return order
 
 
+def counter_channel(doc):
+	"""A counter invoice's channel: a self-order kiosk sale the cashier completed keeps its "Kiosk K<n> · name · Eat in"
+	note (online.kiosk_order) → Kiosk, Dine-in / Takeaway; anything else rung up at the counter → POS."""
+	note = doc.get("remarks") or ""
+	if note.startswith("Kiosk K"):
+		return "Kiosk", ("Dine-in" if note.rstrip().endswith("Eat in") else "Takeaway")
+	return "POS", None
+
+
 def tag_channel(doc, method=None):
 	"""Sales Invoice before_submit: the order channel for the invoice list (counter sales and merged shift invoices = POS)."""
 	if doc.doctype == "Sales Invoice" and not doc.get("ros_channel") and (doc.get("is_pos") or doc.get("is_consolidated")):
-		doc.ros_channel = "POS"
+		doc.ros_channel = counter_channel(doc)[0]
 
 
 def order_from_invoice(doc, method=None):
@@ -141,10 +154,12 @@ def order_from_invoice(doc, method=None):
 	branch = branch_for_pos_profile(doc.pos_profile) or settings().default_branch
 	if not branch:
 		return
+	channel, order_type = counter_channel(doc)
+	extra = {"order_type": order_type} if order_type else {}
 	try:
 		create_order(branch, [{"item_code": i.item_code, "item_name": i.item_name, "qty": i.qty, "uom": i.uom, "rate": i.rate,
 							   "amount": i.amount, "is_free_item": i.is_free_item, "notes": i.get("posa_notes")} for i in doc.items],
-					 channel="POS", customer=doc.customer, customer_name=doc.customer_name, notes=doc.get("posa_notes") or None,
+					 channel=channel, **extra, customer=doc.customer, customer_name=doc.customer_name, notes=doc.get("posa_notes") or None,
 					 invoice_doctype=doc.doctype, invoice=doc.name, grand_total=doc.rounded_total or doc.grand_total,
 					 client_order_uuid=f"{doc.doctype}:{doc.name}")
 	except Exception:
@@ -164,6 +179,7 @@ def cancel_from_invoice(doc, method=None):
 			se.flags.ignore_permissions = True
 			se.cancel()
 			order.stock_status = "Pending"
+			order.flags.ros_stock_reset = True                  # the issue was reversed: let this save clear it
 		for r in order.items:
 			r.kds_status = "Void"
 		set_status(order, "Cancelled")

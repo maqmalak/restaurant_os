@@ -24,6 +24,22 @@ class RestaurantOrder(Document):
 			frappe.throw(_("Table {0} is not in branch {1}.").format(self.table, self.branch))
 		if not self.grand_total:
 			self.grand_total = sum(flt(r.amount) for r in self.items)
+		self._keep_stock_marks()
+
+	def _keep_stock_marks(self):
+		"""Ingredient issue is written with db_set in the background (services.stock_deduction). A copy of the order loaded
+		before that and saved after (rider app, KDS) must not undo it — or the next status issues the recipe again."""
+		if self.is_new() or self.flags.ros_stock_reset:
+			return
+		posted = set(frappe.get_all("Restaurant Order Item", {"parent": self.name, "parenttype": self.doctype, "stock_posted": 1}, pluck="name"))
+		for row in self.items:
+			if row.name in posted:
+				row.stock_posted = 1
+		db = frappe.db.get_value(self.doctype, self.name, ["stock_status", "stock_entry"], as_dict=True)
+		if db and db.stock_entry and not self.stock_entry:
+			self.stock_entry = db.stock_entry
+		if db and db.stock_status == "Posted" and self.stock_status != "Posted":
+			self.stock_status, self.stock_error = "Posted", None
 
 	def on_update(self):
 		if self.flags.ros_assign:
