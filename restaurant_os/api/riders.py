@@ -10,7 +10,7 @@ import random
 
 import frappe
 from frappe import _
-from frappe.rate_limiter import rate_limit
+from restaurant_os.utils.rate_limit import rate_limit
 from frappe.utils import cint, flt, now_datetime, time_diff_in_seconds
 
 from restaurant_os.services import riders as svc
@@ -244,6 +244,7 @@ def track(key: str) -> dict:
 		"points_redeemed": o.loyalty_points_redeemed, "points_value": flt(o.loyalty_amount), "discount": flt(o.discount_amount),
 		"offers": [x for x in (o.offers_applied or "").split("\n") if x], "coupon": o.coupon_code,
 		"cancelled": o.status in ("Cancelled", "Rejected"), "restaurant": company, "branch": o.branch,
+		"currency": frappe.get_cached_value("Company", company, "default_currency"),
 		"logo": frappe.get_cached_value("Company", company, "company_logo"),
 		"branch_point": {"lat": blat, "lng": blng}, "drop": {"lat": o.delivery_lat, "lng": o.delivery_lng, "address": o.delivery_address},
 		"rider": {"name": rider_name, "phone": rider_phone if o.status in svc.ON_ROAD else None,

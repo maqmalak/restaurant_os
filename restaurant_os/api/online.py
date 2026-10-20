@@ -15,7 +15,7 @@ from types import SimpleNamespace
 
 import frappe
 from frappe import _
-from frappe.rate_limiter import rate_limit
+from restaurant_os.utils.rate_limit import rate_limit
 from frappe.utils import cint, flt, nowdate
 
 from restaurant_os.services import riders as rsvc

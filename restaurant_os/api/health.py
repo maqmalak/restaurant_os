@@ -7,7 +7,7 @@ counts work that failed and is waiting for a retry, and the age of the newest or
 import time
 
 import frappe
-from frappe.rate_limiter import rate_limit
+from restaurant_os.utils.rate_limit import rate_limit
 from frappe.utils import cint, now_datetime, time_diff_in_seconds
 
 

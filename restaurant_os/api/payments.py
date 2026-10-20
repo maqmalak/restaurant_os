@@ -4,7 +4,7 @@ import json
 
 import frappe
 from frappe import _
-from frappe.rate_limiter import rate_limit
+from restaurant_os.utils.rate_limit import rate_limit
 from frappe.utils import flt
 
 from restaurant_os.integrations.payments.gateway import gateway
