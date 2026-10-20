@@ -15,8 +15,10 @@ def foodpanda_order():
 	body = frappe.request.get_data() or b"{}"
 	if not adapter().verify(frappe.request.headers, body):
 		frappe.throw(_("Invalid signature."), frappe.AuthenticationError)
-	frappe.set_user("Administrator")                          # the order is created on behalf of the integration
-	order = receive(json.loads(body))
+	from restaurant_os.session import as_system
+
+	with as_system():                                         # the order is created on behalf of the integration
+		order = receive(json.loads(body))
 	return {"order": order.name, "order_no": order.order_no}
 
 

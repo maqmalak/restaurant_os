@@ -77,6 +77,35 @@ def _return_link(dt):
 	return "sales_invoice_item" if dt == SI else "pos_invoice_item"
 
 
+# ------------------------------------------------------------------ access
+MANAGERS = {"System Manager", "Sales Manager", "Accounts Manager"}
+
+
+def _guard(pos_profile=None):
+	"""Counter endpoints: a signed-in user who is on the POS Profile's user list (any profile when none is named), or a
+	manager. Document permissions still apply to everything the endpoint reads or writes."""
+	user = frappe.session.user
+	if user == "Guest":
+		frappe.throw(_("Please sign in."), frappe.PermissionError)
+	if user == "Administrator" or MANAGERS & set(frappe.get_roles()):
+		return
+	f = {"user": user, "parenttype": "POS Profile"}
+	if pos_profile:
+		f["parent"] = pos_profile
+	if not frappe.db.exists("POS Profile User", f):
+		frappe.throw(_("You are not allowed to use this counter.") if pos_profile else _("You are not set up on any counter (POS Profile)."),
+					 frappe.PermissionError)
+
+
+def _profile_of(data):
+	d = json.loads(data) if isinstance(data, str) else (data or {})
+	return d.get("pos_profile") or frappe.throw(_("Choose a counter."))
+
+
+def _doc_profile(name):
+	return frappe.db.get_value(_dt_of(name), name, "pos_profile") or None
+
+
 # ------------------------------------------------------------------ profiles and shifts
 def _profiles_for_user():
 	user = frappe.session.user
@@ -126,6 +155,7 @@ def _profile(name):
 @frappe.whitelist()
 def get_context(pos_profile: str | None = None) -> dict:
 	"""POS profiles the user may sell from, their open POS Awesome shift (if any) and the chosen profile's settings."""
+	_guard()
 	profiles = _profiles_for_user()
 	shift = _open_shift()
 	name = (shift and shift.pos_profile) or pos_profile or (profiles[0].name if profiles else None)
@@ -136,6 +166,7 @@ def get_context(pos_profile: str | None = None) -> dict:
 @frappe.whitelist(methods=["POST"])
 def open_shift(pos_profile: str, balances: str) -> dict:
 	"""POS Awesome's create_opening_voucher: a submitted POS Opening Shift with the counted float per mode."""
+	_guard(pos_profile)
 	from posawesome.posawesome.api.shifts import create_opening_voucher
 
 	if _open_shift():
@@ -326,7 +357,17 @@ def _build_invoice(data, profile, shift=None):
 	inv.flags.ros_offers = _apply_offers(inv, profile, data, manual_rows)
 	_apply_loyalty(inv, data)
 	inv.calculate_taxes_and_totals()
+	from restaurant_os.services.approvals import manual_discount_pct
+
+	inv.flags.ros_manual_discount = manual_discount_pct(inv, manual_rows, data)
 	return inv
+
+
+def _needs_approval(inv):
+	from restaurant_os.services.approvals import discount_limit, is_manager
+
+	limit = discount_limit()
+	return bool(limit) and flt(inv.flags.ros_manual_discount) > limit and not is_manager()
 
 
 def _apply_loyalty(inv, data):
@@ -359,6 +400,7 @@ def _coupon_of(inv):
 @frappe.whitelist(methods=["POST"])
 def preview(data: str) -> dict:
 	"""Totals of the cart as ERPNext computes them (price list, offers, discounts, taxes, rounding) — nothing is saved."""
+	_guard(_profile_of(data))
 	data = json.loads(data)
 	profile = frappe.get_doc("POS Profile", data["pos_profile"])
 	inv = _build_invoice(data, profile)
@@ -369,6 +411,7 @@ def preview(data: str) -> dict:
 			"loyalty_points": cint(inv.loyalty_points), "coupon_code": _coupon_of(inv),
 			"additional_discount_percentage": flt(inv.additional_discount_percentage),
 			"offers": [r.offer_name for r in inv.get("posa_offers") or []],
+			"manual_discount_pct": flt(inv.flags.ros_manual_discount), "needs_approval": _needs_approval(inv),
 			"fbr_fee": flt(sum(flt(t.tax_amount) for t in inv.taxes if (t.description or "").startswith("FBR"))),
 			"items": [{"item_code": r.item_code, "item_name": r.item_name, "qty": r.qty, "uom": r.uom, "rate": r.rate, "amount": r.amount,
 					   "price_list_rate": r.price_list_rate, "discount_percentage": r.discount_percentage,
@@ -386,6 +429,7 @@ def _find_by_request(dt, request_id):
 def submit_invoice(data: str) -> dict:
 	"""Complete a sale (submit) or hold it (data.hold = 1 → draft). data.draft resumes a held invoice.
 	data.offline_id (a client UUID) makes the post idempotent: a sale synced twice is posted once."""
+	_guard(_profile_of(data))
 	data = json.loads(data) if isinstance(data, str) else data
 	dt = _dt(data["pos_profile"])
 	request_id = data.get("offline_id") or data.get("client_request_id")
@@ -450,8 +494,17 @@ def submit_invoice(data: str) -> dict:
 		inv.write_off_account = inv.write_off_account or profile.write_off_account
 		inv.write_off_cost_center = inv.write_off_cost_center or profile.write_off_cost_center
 	inv.calculate_taxes_and_totals()                          # change amount for cash over-tender, outstanding for credit
+	approver = None
+	if _needs_approval(inv):                                  # a big hand-typed discount: a manager signs in at the counter
+		from restaurant_os.services.approvals import require
+
+		approver = require(_("A {0}% discount").format(inv.flags.ros_manual_discount), data.get("approval"))
 	inv.insert()
 	inv.submit()
+	if approver:
+		from restaurant_os.services.approvals import record
+
+		record(inv.doctype, inv.name, _("Discount {0}%").format(inv.flags.ros_manual_discount), approver)
 	return {"name": inv.name, "doctype": inv.doctype, "grand_total": total, "paid_amount": inv.paid_amount,
 			"change_amount": inv.change_amount, "outstanding_amount": inv.outstanding_amount, "write_off_amount": inv.write_off_amount,
 			"loyalty_amount": inv.loyalty_amount, "print_format": profile.get("print_format") or ("POS Invoice" if inv.doctype == PI else "Sales Invoice")}
@@ -459,6 +512,7 @@ def submit_invoice(data: str) -> dict:
 
 @frappe.whitelist()
 def held_invoices(pos_profile: str) -> list:
+	_guard(pos_profile)
 	dt = _dt(pos_profile)
 	return frappe.get_all(dt, filters={"pos_profile": pos_profile, "docstatus": 0, "is_pos": 1},
 						  or_filters={"owner": frappe.session.user, "remarks": ["like", "Kiosk K%"]},   # + self-order kiosk orders
@@ -467,6 +521,7 @@ def held_invoices(pos_profile: str) -> list:
 
 @frappe.whitelist()
 def load_invoice(name: str) -> dict:
+	_guard(_doc_profile(name))
 	inv = frappe.get_doc(_dt_of(name), name)
 	inv.check_permission("read")
 	return {"name": inv.name, "customer": inv.customer, "customer_name": inv.customer_name, "docstatus": inv.docstatus,
@@ -479,6 +534,7 @@ def load_invoice(name: str) -> dict:
 
 @frappe.whitelist()
 def recent_orders(pos_profile: str, q: str | None = None, limit: int = 30) -> list:
+	_guard(pos_profile)
 	f = {"pos_profile": pos_profile, "docstatus": 1, "is_pos": 1}
 	or_f = {"name": ["like", f"%{q}%"], "customer_name": ["like", f"%{q}%"]} if q else None
 	return frappe.get_all(_dt(pos_profile), filters=f, or_filters=or_f, fields=["name", "customer_name", "posting_date", "posting_time",
@@ -486,10 +542,11 @@ def recent_orders(pos_profile: str, q: str | None = None, limit: int = 30) -> li
 
 
 @frappe.whitelist(methods=["POST"])
-def return_invoice(name: str, items: str | None = None, mode_of_payment: str | None = None) -> dict:
+def return_invoice(name: str, items: str | None = None, mode_of_payment: str | None = None, approval: str | None = None) -> dict:
 	"""Return a counter sale in the current shift — whole invoice, or items = {invoice row: qty} for a partial return.
 	Already-returned quantities are respected (ERPNext validates it); the refund goes through the chosen mode (default:
 	the sale's first payment mode)."""
+	_guard(_doc_profile(name))
 	dt = _dt_of(name)
 	if dt == SI:
 		from erpnext.accounts.doctype.sales_invoice.sales_invoice import make_sales_return
@@ -502,6 +559,11 @@ def return_invoice(name: str, items: str | None = None, mode_of_payment: str | N
 	shift = _open_shift(src.pos_profile)
 	if not shift:
 		frappe.throw(_("Open a shift to process returns."))
+	approver = None
+	if cint(frappe.db.get_single_value("Restaurant Settings", "returns_need_approval")):
+		from restaurant_os.services.approvals import require
+
+		approver = require(_("A return / refund"), approval)
 	ret = make_sales_return(name)
 	ret.posting_date = nowdate()
 	ret.posa_pos_opening_shift = shift.name                   # POS Awesome counts the refund in the current shift
@@ -536,12 +598,17 @@ def return_invoice(name: str, items: str | None = None, mode_of_payment: str | N
 	ret.calculate_taxes_and_totals()
 	ret.insert()
 	ret.submit()
+	if approver:
+		from restaurant_os.services.approvals import record
+
+		record(ret.doctype, ret.name, _("Return of {0}, refund {1}").format(name, frappe.format_value(abs(ret.grand_total), "Currency")), approver)
 	return {"name": ret.name, "grand_total": ret.grand_total}
 
 
 @frappe.whitelist()
 def returnable_items(name: str) -> dict:
 	"""Rows of a sale with the quantity still returnable (sold − already returned)."""
+	_guard(_doc_profile(name))
 	dt = _dt_of(name)
 	inv = frappe.get_doc(dt, name)
 	inv.check_permission("read")
@@ -558,6 +625,7 @@ def returnable_items(name: str) -> dict:
 @frappe.whitelist()
 def customer_info(customer: str, company: str) -> dict:
 	"""What the cashier needs about the customer: contact, credit position, loyalty points."""
+	_guard()
 	from erpnext.selling.doctype.customer.customer import get_credit_limit, get_customer_outstanding
 
 	c = frappe.db.get_value("Customer", customer, ["name", "customer_name", "customer_group", "territory", "mobile_no", "email_id",
@@ -583,6 +651,7 @@ def customer_info(customer: str, company: str) -> dict:
 @frappe.whitelist(methods=["POST"])
 def create_customer(data: str) -> dict:
 	"""Quick customer from the counter: name, mobile, email, tax id (NTN / CNIC), group, territory."""
+	_guard()
 	from restaurant_os.setup.masters import leaf
 
 	d = json.loads(data)
@@ -614,6 +683,7 @@ def create_customer(data: str) -> dict:
 @frappe.whitelist()
 def item_options(item_code: str, warehouse: str) -> dict:
 	"""UOMs (with conversion), batches with stock in the counter's warehouse (FEFO), and available serial numbers."""
+	_guard()
 	from erpnext.stock.doctype.batch.batch import get_batch_qty
 
 	item = frappe.db.get_value("Item", item_code, ["item_code", "item_name", "stock_uom", "has_batch_no", "has_serial_no",
@@ -639,6 +709,7 @@ def item_options(item_code: str, warehouse: str) -> dict:
 def offers(pos_profile: str) -> list:
 	"""POS Offers live today for the counter, in the shape the terminal's offers panel reads (coupon-based ones list
 	their coupon codes)."""
+	_guard(pos_profile)
 	prof = frappe.get_cached_doc("POS Profile", pos_profile)
 	today = getdate(nowdate())
 	out = []
@@ -664,6 +735,7 @@ def offers(pos_profile: str) -> list:
 
 @frappe.whitelist()
 def check_coupon(code: str) -> dict:
+	_guard()
 	c = _coupon(code)
 	return {"name": c.name, "coupon_code": c.coupon_code, "pos_offer": c.pos_offer, "pricing_rule": c.pos_offer,
 			"valid_upto": c.valid_upto, "maximum_use": c.maximum_use, "used": c.used,
@@ -707,6 +779,7 @@ def _dues_collected(shift):
 def shift_summary() -> dict:
 	"""Everything the close-shift screen shows: totals, every invoice, taxes, and per payment mode the opening float,
 	sales, cash in / out and the expected amount (the cashier's counted amount starts from it)."""
+	_guard()
 	shift = _open_shift()
 	if not shift:
 		return {}
@@ -758,6 +831,7 @@ def shift_summary() -> dict:
 @frappe.whitelist(methods=["POST"])
 def close_shift(counted: str) -> dict:
 	"""POS Awesome's POS Closing Shift for the user's open shift, with the counted amounts per payment mode."""
+	_guard()
 	from posawesome.posawesome.doctype.pos_closing_shift.closing_processing.creation import (
 		make_closing_shift_from_opening,
 		submit_closing_shift,
@@ -797,6 +871,7 @@ def close_shift(counted: str) -> dict:
 def offline_bundle(pos_profile: str) -> dict:
 	"""Everything the terminal needs to keep selling without the server: profile, tax rows, items with price / stock /
 	barcodes, customers, company header for receipts. Cached in the browser (IndexedDB) and refreshed when online."""
+	_guard(pos_profile)
 	from erpnext.selling.page.point_of_sale.point_of_sale import get_items
 
 	prof = _profile(pos_profile)
@@ -840,6 +915,7 @@ def _company_header(company):
 @frappe.whitelist(methods=["POST"])
 def sync_invoices(invoices: str) -> list:
 	"""Post sales rung up offline, one by one (each in its own transaction). Returns per offline id: name or error."""
+	_guard()
 	out = []
 	for data in json.loads(invoices):
 		try:
@@ -856,6 +932,7 @@ def sync_invoices(invoices: str) -> list:
 @frappe.whitelist()
 def receipt(name: str) -> dict:
 	"""What the thermal receipt prints."""
+	_guard(_doc_profile(name))
 	inv = frappe.get_doc(_dt_of(name), name)
 	inv.check_permission("read")
 	return {
@@ -887,6 +964,7 @@ def receipt(name: str) -> dict:
 def invoices(pos_profile: str, status: str = "all", from_date: str | None = None, to_date: str | None = None, q: str | None = None,
 			 mine: int = 0, start: int = 0, page_length: int = 50) -> dict:
 	"""Invoice manager: sales of a counter by status (paid / credit / return / held / offline / cancelled), dates, search."""
+	_guard(pos_profile)
 	dt = _dt(pos_profile)
 	cond, vals = ["pos_profile = %(p)s", "is_pos = 1"], {"p": pos_profile}
 	if from_date:
@@ -929,6 +1007,7 @@ def invoices(pos_profile: str, status: str = "all", from_date: str | None = None
 
 @frappe.whitelist(methods=["POST"])
 def delete_held(name: str) -> dict:
+	_guard(_doc_profile(name))
 	dt = _dt_of(name)
 	doc = frappe.get_doc(dt, name)
 	if doc.docstatus != 0:
@@ -942,6 +1021,7 @@ def delete_held(name: str) -> dict:
 @frappe.whitelist()
 def shift_report(opening: str | None = None) -> dict:
 	"""X report (the open shift so far) or Z report (a closed shift): takings by mode, items, returns, discounts, taxes, profit."""
+	_guard(frappe.db.get_value("POS Opening Shift", opening, "pos_profile") if opening else None)
 	if opening:
 		shift = frappe.db.get_value("POS Opening Shift", opening, ["name", "pos_profile", "company", "user", "period_start_date", "pos_closing_shift"], as_dict=True)
 	else:
@@ -988,6 +1068,7 @@ def shift_report(opening: str | None = None) -> dict:
 @frappe.whitelist()
 def last_shift_report() -> dict:
 	"""Z report of the cashier's most recently closed shift (printed right after closing)."""
+	_guard()
 	name = frappe.db.get_value("POS Opening Shift", {"user": frappe.session.user, "docstatus": 1, "pos_closing_shift": ["is", "set"]},
 							   "name", order_by="period_start_date desc")
 	return shift_report(name) if name else {}
@@ -997,6 +1078,7 @@ def last_shift_report() -> dict:
 def receive_payment(customer: str, amount: float, mode_of_payment: str, reference_no: str | None = None) -> dict:
 	"""Collect a customer's dues at the counter: a Payment Entry allocated to their oldest open Sales Invoices.
 	Its reference number is the shift, which is how POS Awesome's closing counts it in the drawer."""
+	_guard()
 	from erpnext.accounts.doctype.sales_invoice.sales_invoice import get_bank_cash_account
 	from erpnext.accounts.party import get_party_account
 
@@ -1034,6 +1116,7 @@ def receive_payment(customer: str, amount: float, mode_of_payment: str, referenc
 def qty_presets(pos_profile: str | None = None) -> dict:
 	"""Items with POS quantity presets: {item_code: {default: n, options: [..]}} (Item.mm_pos_default_qty / mm_pos_qty_options,
 	present when mm_core's custom fields are installed)."""
+	_guard(pos_profile)
 	if not frappe.get_meta("Item").has_field("mm_pos_default_qty"):
 		return {}
 	out = {}
@@ -1048,6 +1131,7 @@ def qty_presets(pos_profile: str | None = None) -> dict:
 @frappe.whitelist()
 def stock_setup(pos_profile: str) -> dict:
 	"""The counter's warehouse and the company's other warehouses (sources for a transfer)."""
+	_guard(pos_profile)
 	prof = frappe.get_cached_doc("POS Profile", pos_profile)
 	others = frappe.get_all("Warehouse", {"company": prof.company, "is_group": 0, "disabled": 0, "name": ["!=", prof.warehouse]},
 							pluck="name", order_by="name")
@@ -1059,6 +1143,7 @@ def stock_setup(pos_profile: str) -> dict:
 @frappe.whitelist()
 def counter_stock(pos_profile: str, q: str | None = None) -> dict:
 	"""What's on the counter's shelves: qty, reorder level, value — low / out items first."""
+	_guard(pos_profile)
 	prof = frappe.get_cached_doc("POS Profile", pos_profile)
 	cond, vals = "", {"w": prof.warehouse}
 	if q:
@@ -1079,6 +1164,7 @@ def counter_stock(pos_profile: str, q: str | None = None) -> dict:
 @frappe.whitelist()
 def source_stock(warehouse: str, item_codes: str) -> dict:
 	"""Available qty of the chosen items in a source warehouse (for transfers)."""
+	_guard()
 	codes = json.loads(item_codes) or [""]
 	return {c: flt(q) for c, q in frappe.db.sql("select item_code, actual_qty from tabBin where warehouse = %s and item_code in %s", (warehouse, codes))}
 
@@ -1087,6 +1173,7 @@ def source_stock(warehouse: str, item_codes: str) -> dict:
 def receive_stock(data: str) -> dict:
 	"""Stock into the counter: mode "transfer" (Material Transfer from a source warehouse) or "receipt" (Material Receipt,
 	new stock at a valuation rate). Submitted straight away; returns the Stock Entry."""
+	_guard(_profile_of(data))
 	d = json.loads(data)
 	prof = frappe.get_cached_doc("POS Profile", d["pos_profile"])
 	rows = [r for r in d.get("items") or [] if flt(r.get("qty")) > 0]
@@ -1122,6 +1209,7 @@ def receive_stock(data: str) -> dict:
 @frappe.whitelist()
 def stock_receipts(pos_profile: str, limit: int = 20) -> list:
 	"""Recent stock entries into the counter's warehouse."""
+	_guard(pos_profile)
 	wh = frappe.get_cached_value("POS Profile", pos_profile, "warehouse")
 	rows = frappe.db.sql("""select se.name, se.purpose, se.posting_date, se.posting_time, se.docstatus, se.owner, se.remarks, se.total_incoming_value,
 			count(d.name) as line_count, sum(d.qty) as qty, max(d.s_warehouse) as source
@@ -1135,6 +1223,7 @@ def stock_receipts(pos_profile: str, limit: int = 20) -> list:
 
 @frappe.whitelist()
 def stock_receipt_detail(name: str) -> dict:
+	_guard()
 	se = frappe.get_doc("Stock Entry", name)
 	se.check_permission("read")
 	return {"name": se.name, "purpose": se.purpose, "posting_date": str(se.posting_date), "posting_time": str(se.posting_time)[:5],
@@ -1180,6 +1269,7 @@ def notify_invoice(doc, method=None):
 def alerts(pos_profile: str) -> list:
 	"""POS alerts for the bell: stock running out at the counter, held drafts, unpaid credit sales, a long-open shift,
 	coupons about to expire. Each: key, level (critical / warning / info), title, detail, action."""
+	_guard(pos_profile)
 	out = []
 	dt = _dt(pos_profile)
 	prof = frappe.get_cached_doc("POS Profile", pos_profile)
@@ -1229,6 +1319,7 @@ def alerts(pos_profile: str) -> list:
 @frappe.whitelist()
 def cash_setup() -> dict:
 	"""The open shift, its payment modes and the accounts a cash receipt / payment can go against."""
+	_guard()
 	shift = _open_shift()
 	if not shift:
 		return {"shift": None}
@@ -1254,6 +1345,7 @@ def record_cash(data: str) -> dict:
 	- Out against an expense account, or a deposit: POS Awesome's POS Cash Movement (Expense / Deposit) when the profile has
 	  cash movement on; otherwise a Journal Entry.
 	- In against an income account: a Journal Entry against the mode's cash / bank account."""
+	_guard()
 	from erpnext.accounts.doctype.sales_invoice.sales_invoice import get_bank_cash_account
 	from erpnext.accounts.party import get_party_account
 
@@ -1336,6 +1428,7 @@ def record_cash(data: str) -> dict:
 def cash_movements(pos_profile: str, scope: str = "shift", from_date: str | None = None, to_date: str | None = None) -> dict:
 	"""Cash in / out recorded at a counter — the open shift's (scope "shift") or a date range's, with totals: Payment
 	Entries referencing a shift, Journal Entries tagged with it, and POS Awesome POS Cash Movements."""
+	_guard(pos_profile)
 	vals = {"p": pos_profile, "f": from_date or nowdate(), "t": to_date or nowdate()}
 	if scope == "shift":
 		shift = _open_shift(pos_profile)
@@ -1377,6 +1470,7 @@ def cash_movements(pos_profile: str, scope: str = "shift", from_date: str | None
 @frappe.whitelist(methods=["POST"])
 def cancel_cash(doctype: str, name: str) -> dict:
 	"""Undo a cash in / out recorded at the counter by this cashier (or a System Manager)."""
+	_guard()
 	if doctype == "POS Cash Movement":
 		from posawesome.posawesome.api.cash_movement.service import cancel_cash_movement
 
@@ -1399,6 +1493,7 @@ def cancel_cash(doctype: str, name: str) -> dict:
 def dashboard(company: str, from_date: str | None = None, to_date: str | None = None, pos_profile: str | None = None) -> dict:
 	"""POS insights for a date range (default: this month) and optional counter — sales, profit and margin — plus fixed
 	period cards (today / yesterday / this & last week / this & last month), each compared like-for-like."""
+	_guard(pos_profile)
 	from datetime import timedelta
 
 	dt = _dt(pos_profile)

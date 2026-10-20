@@ -272,6 +272,8 @@ def ensure_settings(branch, accounts):
 				  "run_jobs_inline": 1, "aggregator_mode": "Mock", "messaging_mode": "Mock", "kds_sound": 1})
 	if not frappe.db.sql("select 1 from tabSingles where doctype = 'Restaurant Settings' and field = 'block_sold_out'"):
 		s.block_sold_out = 1                                  # settings from before this option: switch it on
+	if not frappe.db.sql("select 1 from tabSingles where doctype = 'Restaurant Settings' and field = 'discount_approval_pct'"):
+		s.update({"discount_approval_pct": 10, "returns_need_approval": 1})   # manager approval (phase 11)
 	if not s.delivery_fee_item:                               # online ordering defaults
 		if not frappe.db.exists("Item", "Delivery Charge"):
 			if not frappe.db.exists("Item Group", "Services"):

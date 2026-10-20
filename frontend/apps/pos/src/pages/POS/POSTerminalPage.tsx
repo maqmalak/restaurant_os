@@ -24,6 +24,7 @@ import {
   searchBundle, usePosSync, usePwaInstall, uuid, type OfflineBundle, type QueuedSale, type ReceiptData, type SyncState,
 } from "./pos-offline";
 import { desktop, loadPrinter, printHtml, printReceipt, PrinterSettingsDialog, receiptHtml, ReceiptPreview, shiftReportHtml, type ShiftReport } from "./pos-receipt";
+import { ApprovalCancelled, useManagerApproval } from "@/components/pos/manager-approval";
 import { InvoicesDialog, printUrl, ReceiveDuesDialog, SyncDialog } from "./pos-panels";
 
 interface Profile {
@@ -1310,14 +1311,15 @@ function PayDialog({ profile, total, payload, draft, money, customer, isWalkIn, 
     else { setCredit(false); if (t !== "split") setAmounts({ [t]: due }); }
   };
 
+  const { withApproval, dialog: approvalDialog } = useManagerApproval();
   const complete = async (opts: { write_off?: boolean } = {}) => {
     setBusy(true);
     try {
       if (offline) { await queueOffline(opts); return; }
-      const r = await postCall<NonNullable<typeof done>>("restaurant_os.api.pos.submit_invoice", {
+      const r = await withApproval((approval) => postCall<NonNullable<typeof done>>("restaurant_os.api.pos.submit_invoice", {
         data: JSON.stringify({ ...payload, draft, redeem_points: points || undefined, credit: credit ? 1 : undefined, due_date: credit ? dueDate : undefined,
-          write_off: opts.write_off ? 1 : undefined, payments: paymentsOut() }),
-      });
+          write_off: opts.write_off ? 1 : undefined, payments: paymentsOut(), approval }),
+      }));
       setDone(r);
       void getCall<ReceiptData>("restaurant_os.api.pos.receipt", { name: r.name }).then((rc) => { setReceipt(rc); if (autoPrint) printReceipt(rc, printer); }).catch(() => undefined);
     } catch (e) {
@@ -1325,12 +1327,13 @@ function PayDialog({ profile, total, payload, draft, money, customer, isWalkIn, 
         sync.markOffline();
         toast("Connection lost — sale saved on this device and will sync.", { icon: "📴" });
         await queueOffline(opts);
-      } else toast.error(humanizeError(e));
+      } else if (!(e instanceof ApprovalCancelled)) toast.error(humanizeError(e));
     } finally { setBusy(false); }
   };
   const ready = short <= 0.005 || credit;
 
   return (
+    <>{approvalDialog}
     <Dialog open onClose={done ? onDone : onClose} size="md" className={done ? "max-w-md" : "max-w-xl"}>
       {done ? (
         <div className="space-y-4">
@@ -1497,7 +1500,7 @@ function PayDialog({ profile, total, payload, draft, money, customer, isWalkIn, 
           </button>
         </form>
       )}
-    </Dialog>
+    </Dialog></>
   );
 }
 

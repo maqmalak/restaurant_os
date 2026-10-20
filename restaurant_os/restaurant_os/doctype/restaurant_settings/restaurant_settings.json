@@ -46,6 +46,10 @@
   "column_break_b",
   "kds_red_minutes",
   "kds_default_order_type",
+  "section_controls",
+  "discount_approval_pct",
+  "column_break_ctl",
+  "returns_need_approval",
   "section_delivery",
   "rider_assignment",
   "rider_ping_seconds",
@@ -299,6 +303,29 @@
    "label": "Counter Orders Are",
    "options": "Takeaway\nDine-in\nDelivery\nPickup",
    "default": "Takeaway"
+  },
+  {
+   "fieldname": "section_controls",
+   "fieldtype": "Section Break",
+   "label": "Manager Approval",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "discount_approval_pct",
+   "fieldtype": "Percent",
+   "label": "Discount Needs a Manager Above (%)",
+   "default": "10",
+   "description": "Cashier-entered discounts (line + bill) above this share of the bill need a manager's sign-in. 0 = never."
+  },
+  {
+   "fieldname": "column_break_ctl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "returns_need_approval",
+   "fieldtype": "Check",
+   "label": "Returns / Refunds Need a Manager",
+   "default": "1"
   },
   {
    "fieldname": "section_delivery",

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCall, humanizeError, postCall } from "@/services/frappe";
+import { ApprovalCancelled, useManagerApproval } from "@/components/pos/manager-approval";
 import { cn } from "@/utils/cn";
 import { kvGet, localDate, type CompanyHeader, type OfflineBundle, type ReceiptData, type SyncState } from "./pos-offline";
 import { loadPrinter, paymentReceiptHtml, printHtml, printReceipt, receiptHtml, ReceiptPreview } from "./pos-receipt";
@@ -318,6 +319,7 @@ export function ReturnDialog({ name, profile, money, onClose, onDone }: { name: 
   const [qty, setQty] = useState<Record<string, number>>({});
   const [mode, setMode] = useState("");
   const [busy, setBusy] = useState(false);
+  const { withApproval, dialog: approvalDialog } = useManagerApproval();
   useEffect(() => {
     if (!inv) return;
     setQty(Object.fromEntries(inv.items.map((i) => [i.name, i.returnable])));
@@ -327,14 +329,16 @@ export function ReturnDialog({ name, profile, money, onClose, onDone }: { name: 
   const submit = async () => {
     setBusy(true);
     try {
-      const r = await postCall<{ name: string; grand_total: number }>("restaurant_os.api.pos.return_invoice", { name, items: JSON.stringify(qty), mode_of_payment: mode });
+      const r = await withApproval((approval) => postCall<{ name: string; grand_total: number }>("restaurant_os.api.pos.return_invoice",
+        { name, items: JSON.stringify(qty), mode_of_payment: mode, approval: approval ? JSON.stringify(approval) : undefined }));
       toast.success(`Returned as ${r.name} — refund ${money(Math.abs(r.grand_total))}`);
       const settings = loadPrinter();
       if (settings.autoPrint) void getCall<ReceiptData>("restaurant_os.api.pos.receipt", { name: r.name }).then((rc) => printReceipt(rc, settings));
       onDone();
-    } catch (e) { toast.error(humanizeError(e)); } finally { setBusy(false); }
+    } catch (e) { if (!(e instanceof ApprovalCancelled)) toast.error(humanizeError(e)); } finally { setBusy(false); }
   };
   return (
+    <>{approvalDialog}
     <Dialog open onClose={onClose} title={`Return ${name}`} description={inv ? `${inv.customer_name} · ${inv.posting_date}` : undefined} size="lg">
       {!inv ? <Skeleton className="h-40" /> : (
         <div className="space-y-4">
@@ -356,7 +360,7 @@ export function ReturnDialog({ name, profile, money, onClose, onDone }: { name: 
           <Button className="w-full" disabled={busy || refund <= 0} onClick={() => void submit()}><Undo2 className="h-4 w-4" /> Process return</Button>
         </div>
       )}
-    </Dialog>
+    </Dialog></>
   );
 }
 

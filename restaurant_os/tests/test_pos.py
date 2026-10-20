@@ -20,6 +20,11 @@ OPENING = json.dumps([{"mode_of_payment": "Cash", "opening_amount": 5000}, {"mod
 					  {"mode_of_payment": "Bank Transfer", "opening_amount": 0}])
 
 
+def _close_open_shifts_for(user):
+	for name in frappe.get_all("POS Opening Shift", {"user": user, "docstatus": 1, "status": "Open"}, pluck="name"):
+		frappe.db.set_value("POS Opening Shift", name, "status", "Closed")
+
+
 def _close_open_shifts():
 	for name in frappe.get_all("POS Opening Shift", {"user": "Administrator", "docstatus": 1, "status": "Open"}, pluck="name"):
 		frappe.db.set_value("POS Opening Shift", name, "status", "Closed")
@@ -582,3 +587,62 @@ class TestRestaurantPOS(IntegrationTestCase):
 		res = online.send_campaign(c.name)
 		self.assertGreaterEqual(res["sent"], 1)
 		self.assertEqual(frappe.db.get_value("Restaurant Campaign", c.name, "status"), "Sent")
+
+	# ---------------------------------------------------------------- phase 11: hardening
+	def test_counter_access_guard(self):
+		for user in ("Guest", "rider1@saffrongrill.example"):
+			with self.assertRaises(frappe.PermissionError, msg=user):
+				self._as(user, pos.get_context)
+			with self.assertRaises(frappe.PermissionError, msg=user):
+				self._as(user, pos.preview, json.dumps(self.cart([("Chicken Tikka", 1)])))
+		self.assertTrue(self._as("cashier@saffrongrill.example", pos.get_context)["profiles"])
+
+	def test_manager_approval_for_discount_and_return(self):
+		from frappe.utils.password import update_password
+
+		from restaurant_os.services.approvals import ApprovalRequired
+
+		cashier, manager = "cashier@saffrongrill.example", "manager@saffrongrill.example"
+		frappe.db.savepoint("approval")
+		try:
+			update_password(manager, "Mgr-test-123")
+			frappe.set_user(cashier)
+			_close_open_shifts_for(cashier)
+			pos.open_shift(PROFILE, OPENING)
+			cart = self.cart([("Chicken Tikka", 2)], discount_percentage=5)
+			self.assertFalse(pos.preview(json.dumps(cart))["needs_approval"], "5% is within the cashier's limit")
+			cart = self.cart([("Chicken Tikka", 2)], discount_percentage=25)
+			p = pos.preview(json.dumps(cart))
+			self.assertTrue(p["needs_approval"])
+			self.assertAlmostEqual(p["manual_discount_pct"], 25, delta=0.5)
+			pay = {**cart, "payments": [{"mode_of_payment": "Cash", "amount": p["rounded_total"]}]}
+			with self.assertRaises(ApprovalRequired):
+				pos.submit_invoice(json.dumps(pay))
+			with self.assertRaises(ApprovalRequired):
+				pos.submit_invoice(json.dumps({**pay, "approval": {"user": manager, "password": "wrong"}}))
+			with self.assertRaises(ApprovalRequired):     # a cashier can't approve
+				pos.submit_invoice(json.dumps({**pay, "approval": {"user": cashier, "password": "x"}}))
+			r = pos.submit_invoice(json.dumps({**pay, "approval": {"user": manager, "password": "Mgr-test-123"}}))
+			self.assertTrue(frappe.db.exists("Comment", {"reference_name": r["name"], "content": ["like", "%approved by%"]}))
+			with self.assertRaises(ApprovalRequired):
+				pos.return_invoice(r["name"])
+			ret = pos.return_invoice(r["name"], approval=json.dumps({"user": manager, "password": "Mgr-test-123"}))
+			self.assertLess(flt(ret["grand_total"]), 0)
+			frappe.set_user(manager)                       # a manager returns without a second sign-in
+			self.assertTrue(frappe.db.get_value(self.dt, r["name"], "docstatus") == 1)
+		finally:
+			frappe.set_user("Administrator")
+			frappe.cache.delete_value(f"ros:approval_fail:{cashier}")
+			frappe.db.rollback(save_point="approval")
+
+	def test_mock_webhooks_reject_strangers(self):
+		from restaurant_os.integrations.payments.gateway import gateway
+
+		self.assertFalse(gateway().verify_webhook({}, b"{}"), "the mock gateway has no webhook")
+		frappe.set_user("Guest")
+		try:
+			from restaurant_os.integrations.aggregators.foodpanda import adapter
+
+			self.assertFalse(adapter().verify({}, b"{}"), "mock Foodpanda webhook needs a signed-in manager")
+		finally:
+			frappe.set_user("Administrator")

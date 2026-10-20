@@ -22,8 +22,10 @@ class FoodpandaAdapter(AggregatorAdapter):
 		return self.settings.aggregator_mode == "Live"
 
 	def verify(self, headers, body):
-		if not self.live:
-			return True
+		if not self.live:                                     # mock: only staff test it (Simulate button / signed-in manager)
+			from restaurant_os.services.approvals import is_manager
+
+			return frappe.session.user != "Guest" and is_manager()
 		secret = self.settings.get_password("foodpanda_webhook_secret", raise_exception=False)
 		sig = (headers or {}).get("X-Signature") or ""
 		return bool(secret) and hmac.compare_digest(sig, hmac.new(secret.encode(), body, hashlib.sha256).hexdigest())

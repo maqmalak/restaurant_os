@@ -47,10 +47,27 @@ def custom_fields():
 						 ignore_validate=True, update=True)
 
 
+# audit trail (spec: track changes on orders, discounts, voids and stock adjustments) on the standard doctypes we use;
+# the restaurant doctypes set track_changes themselves
+TRACKED = ("POS Invoice", "Sales Invoice", "Stock Entry", "Stock Reconciliation", "POS Offer", "POS Coupon", "POS Profile",
+		   "POS Cash Movement", "Payment Entry", "Item Price", "Loyalty Program")
+
+
+def track_changes():
+	import frappe
+	from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+
+	for dt in TRACKED:
+		if frappe.db.exists("DocType", dt) and not frappe.get_meta(dt).track_changes:
+			make_property_setter(dt, None, "track_changes", 1, "Check", for_doctype=True, validate_fields_for_doctype=False)
+
+
 def after_install():
 	custom_fields()
+	track_changes()
 
 
 def after_migrate():
 	custom_fields()
+	track_changes()
 	backfill_channels()

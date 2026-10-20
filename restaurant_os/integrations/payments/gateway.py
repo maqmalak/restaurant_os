@@ -29,7 +29,7 @@ class MockGateway(Gateway):
 		return f"/ros/pay/{session}"
 
 	def verify_webhook(self, headers, body):
-		return True
+		return False                                          # the test gateway pays through mock_pay, never the webhook
 
 
 class LiveGateway(Gateway):
