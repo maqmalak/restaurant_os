@@ -656,3 +656,27 @@ class TestRestaurantPOS(IntegrationTestCase):
 			self.assertFalse(adapter().verify({}, b"{}"), "mock Foodpanda webhook needs a signed-in manager")
 		finally:
 			frappe.set_user("Administrator")
+
+	def test_cashier_runs_tables_and_phone_orders(self):
+		"""Counter staff (Sales User) must be able to seat, send, settle and take phone orders — not only managers."""
+		from restaurant_os.api import riders as api
+
+		cashier = "cashier@saffrongrill.example"
+		frappe.db.savepoint("cashier_tables")
+		try:
+			frappe.set_user(cashier)
+			_close_open_shifts_for(cashier)
+			pos.open_shift(PROFILE, OPENING)
+			t = frappe.db.get_value("Restaurant Table", {"branch": masters.BRANCH, "status": "Free"}, "name")
+			tables.seat(t, 2)
+			tables.send(t, json.dumps([{"item_code": "Chicken Tikka", "qty": 1}]))
+			bill = tables.view(t)["bill"]
+			tables.settle(t, json.dumps([{"mode_of_payment": "Cash", "amount": bill["rounded_total"]}]))
+			tables.end_sitting(t)
+			self.assertEqual(frappe.db.get_value("Restaurant Table", t, "status"), "Free")
+			o = api.new_delivery_order(json.dumps({"customer_name": "Phone Diner", "phone": "03001234567", "address": "Gulberg",
+												   "items": [{"item_code": "Chicken Tikka", "qty": 1}]}))
+			self.assertTrue(o["order"])
+		finally:
+			frappe.set_user("Administrator")
+			frappe.db.rollback(save_point="cashier_tables")
