@@ -85,6 +85,16 @@ Dispatch (staff): `dispatch(branch?)`, `assign(order, rider)`, `handover(rider, 
 `live(branch?)`, `sales(filters)`, `kitchen(filters)`, `menu_engineering(filters)`, `customers(filters)` — filters JSON:
 `from_date`, `to_date`, `branch`, `channel`, `group_by`. Same logic as the script reports (services/analytics.py).
 
+## Health & approvals
+
+- `restaurant_os.api.health.ping` (guest, GET): `{status: ok|degraded, database_ms, redis, backlog: {stock_failed,
+  fbr_failed, payments_awaiting, errors_last_hour}, last_order_seconds_ago}`.
+- Manager approval: `pos.submit_invoice` (in `data.approval`) and `pos.return_invoice(approval=)` take
+  `{"user", "password"}` of a manager. Without it, and when needed, they fail with `exc_type: "ApprovalRequired"`.
+  `pos.preview` returns `manual_discount_pct` and `needs_approval`, so the terminal can warn before payment.
+- `kds.assign_rider(order, rider, check_in=0)` / `riders.assign(…, check_in=0)`: `check_in=1` first puts an off-duty
+  rider on duty (HR check-in).
+
 ## Realtime events
 
 `ros_kds` {event, order, branch, status} — any order change (KDS and table map refresh); `ros_tables` {table, branch};

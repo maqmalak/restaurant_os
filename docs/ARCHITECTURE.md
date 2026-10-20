@@ -71,7 +71,7 @@ Current gap vs. the brief: the POS keeps the imported code's SWR + frappe-react-
 (copied from MicroMax). Moving those into `@ros/ui` / `@ros/api` and switching to TanStack Query is planned as each new
 app needs them, rather than rewriting the working POS first.
 
-## 5. Order state machine (Proposed)
+## 5. Order state machine (built)
 
 ```
 Placed → Accepted → Preparing → Ready → Picked Up → Out for Delivery → Delivered
@@ -82,7 +82,7 @@ Dine-in / takeaway: Ready → Served / Collected → Completed
 Each transition stamps `<status>_at`, publishes `ros_order_update` to the branch room, and enqueues the next automatic step
 (KDS tickets on Accepted, rider offer on Ready, review request on Delivered/Completed, stock deduction per OPEN_QUESTIONS #7).
 
-## 6. Data flow (Proposed)
+## 6. Data flow (built; tested end to end by tests/test_e2e.py)
 
 ```
 channel (POS / web / app / kiosk / Foodpanda webhook)

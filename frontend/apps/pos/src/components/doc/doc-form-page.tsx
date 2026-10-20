@@ -7,7 +7,7 @@ import { deskUrl, docUrl } from "@/app/doc-routes";
 import { PrintDialog } from "./print-dialog";
 import useSWR from "swr";
 import { GitBranch } from "lucide-react";
-import { postCall } from "@/services/frappe";
+import { getCall, postCall } from "@/services/frappe";
 import { DOC_MAKES, DOC_STATUS_ACTIONS, runStatusAction } from "./doc-actions-menu";
 import { PageHeader } from "@/components/common/page-header";
 import { Button } from "@/components/ui/button";
@@ -118,8 +118,13 @@ function DocFormPageInner({ config }: { config: DocConfig }) {
   const { values, rows } = state;
 
   // Workflow: the transitions the current user may take from the document's state (none when no workflow).
+  // Ask only when the doctype has an active workflow: Frappe logs an error for every doctype without one.
+  const { data: hasWorkflow } = useSWR(`wf-exists:${config.doctype}`,
+    () => getCall<number>("frappe.client.get_count", { doctype: "Workflow", filters: JSON.stringify({ document_type: config.doctype, is_active: 1 }) })
+      .then((n) => Number(n) > 0).catch(() => false),
+    { revalidateOnFocus: false });
   const { data: transitions, mutate: refreshTransitions } = useSWR(
-    !isNew && doc ? `wf-transitions:${config.doctype}:${routeName}:${(doc as Doc).modified}` : null,
+    !isNew && doc && hasWorkflow ? `wf-transitions:${config.doctype}:${routeName}:${(doc as Doc).modified}` : null,
     () => postCall<{ action: string; next_state: string }[]>("frappe.model.workflow.get_transitions", { doc: JSON.stringify(doc) }).catch(() => []),
     { revalidateOnFocus: false },
   );

@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-21 — Phase 11: hardening
+
+- **Security review** (docs/HARDENING.md): all 94 whitelisted methods checked. The 37 counter methods now require the
+  user to be on the POS Profile's user list, or a manager. The mock payment and Foodpanda webhooks no longer accept
+  strangers. Foodpanda orders are created with `as_system()` instead of `set_user`.
+- **Manager approval:** cashier discounts above 10% of the bill, and every return, need a manager to sign in at the
+  terminal. The approval is noted on the invoice, and wrong passwords are throttled. Both are set under Settings →
+  Manager Approval.
+- **Audit trail:** change history is on for invoices, stock entries and reconciliations, offers, coupons, POS
+  profiles, cash movements, payments, prices and the loyalty program.
+- **End-to-end test** of the nine steps on all six channels (`tests/test_e2e.py`). It found and fixed three bugs:
+  - stock deduction and rider offers didn't fire on the save that reached the status
+  - deliveries had their ingredients issued twice
+  - kiosk sales were recorded as POS
+- **Load test** (`tests/load.py`, rolled back): POS checkout p95 204 ms (budget 300); online order → KDS p95 113 ms
+  (budget 1 s).
+- **Health endpoint** `restaurant_os.api.health.ping`, and production setup steps in SETUP.md.
+- **KDS:** an "Assign rider" button on delivery cards. Off-duty riders are listed with "check in & assign".
+- Document forms no longer log "Workflow not found" errors.
+- Tests: 36 unit + 1 end-to-end, all passing.
+
 ## 2026-10-21 — Phase 9: offers online, loyalty, reviews, campaigns
 
 - **Offers & coupons online**: web orders get the same POS Offers as the counter (free Raita with Karahi shows in the cart and
