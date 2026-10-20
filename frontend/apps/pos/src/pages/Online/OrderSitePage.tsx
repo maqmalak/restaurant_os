@@ -114,19 +114,26 @@ export default function OrderSitePage() {
               <span className="mb-0.5 text-sm text-muted-foreground">{menu.items.filter((i) => i.item_group === c).length} dishes</span>
               <span className="mb-2 h-px flex-1 bg-gradient-to-r from-[#e59a3a]/50 via-[#e59a3a]/15 to-transparent" />
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
               {menu.items.filter((i) => i.item_group === c).map((i) => (
                 <button key={i.item_code} disabled={i.sold_out || !menu.open} onClick={() => setOpen(i)}
-                  className="flex gap-3 overflow-hidden rounded-2xl border border-border bg-card p-3 text-left shadow-sm transition hover:shadow-md disabled:opacity-60">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold">{i.item_name}</div>
-                    {i.description && <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{i.description}</div>}
-                    <div className="mt-2 font-bold text-primary">{money(i.price, cur)}</div>
-                    {i.sold_out && <div className="mt-1 text-xs font-bold uppercase text-red-600">Sold out</div>}
+                  className="group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-card text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f5c46b]/40 hover:shadow-[0_18px_40px_-22px_rgba(229,154,58,.55)] active:scale-[0.98] disabled:pointer-events-none">
+                  <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                    {i.image
+                      ? <img src={i.image} alt="" loading="lazy" className={cn("h-full w-full object-cover transition-transform duration-700 group-hover:scale-110", (i.sold_out || !menu.open) && "grayscale")} />
+                      : <div className="flex h-full items-center justify-center text-muted-foreground/40"><ShoppingBag className="h-10 w-10" /></div>}
+                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/45 to-transparent" />
+                    <span className="absolute bottom-2.5 left-2.5 rounded-full border border-white/20 bg-black/45 px-3 py-1 text-sm font-bold text-white shadow-lg backdrop-blur-md sm:text-base">{money(i.price, cur)}</span>
+                    {i.sold_out && <span className="absolute inset-0 flex items-center justify-center bg-black/50">
+                      <span className="rounded-full border border-white/40 px-3 py-1 text-xs font-bold uppercase tracking-[0.25em] text-white">Sold out</span></span>}
                   </div>
-                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-muted">
-                    {i.image && <img src={i.image} alt="" loading="lazy" className="h-full w-full object-cover" />}
-                    {!i.sold_out && <span className="absolute bottom-1 right-1 rounded-full bg-white p-1 text-primary shadow"><Plus className="h-4 w-4" /></span>}
+                  <div className="flex flex-1 items-end gap-2 p-3 sm:p-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="os-serif text-base font-semibold leading-tight sm:text-xl">{i.item_name}</div>
+                      <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground sm:text-sm">{i.description || (i.modifiers.length ? "Make it your way" : "\u00a0")}</div>
+                    </div>
+                    {!i.sold_out && <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#f5c46b] to-[#e59a3a] text-[#1a1208] shadow-[0_8px_18px_-8px_rgba(229,154,58,.9)] transition-transform group-hover:scale-110 sm:h-10 sm:w-10">
+                      <Plus className="h-5 w-5" strokeWidth={2.75} /></span>}
                   </div>
                 </button>
               ))}
