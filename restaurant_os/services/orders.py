@@ -65,10 +65,12 @@ def set_status(order, status, save=True):
 
 
 def refresh_status(order):
-	"""Order status from its lines: any started → Preparing; every live line ready / served → Ready."""
+	"""Order status from its kitchen lines: any started → Preparing; every one ready / served → Ready. Lines no station
+	makes (delivery fee, …) don't count — an order of only such lines is Ready at once."""
 	live = [r for r in order.items if r.kds_status != "Void"]
 	if order.status not in OPEN or not live:
 		return
+	live = [r for r in live if r.station] or live
 	if all(r.kds_status in ("Ready", "Served") for r in live):
 		set_status(order, "Ready", save=False)
 	elif any(r.kds_status in ("Preparing", "Ready") for r in live):
@@ -78,7 +80,8 @@ def refresh_status(order):
 
 
 def create_order(branch, items, channel="POS", order_type=None, customer=None, customer_name=None, table=None, notes=None,
-				 invoice_doctype=None, invoice=None, grand_total=0, external_order_id=None, client_order_uuid=None, priority=0, delivery=None):
+				 invoice_doctype=None, invoice=None, grand_total=0, external_order_id=None, client_order_uuid=None, priority=0, delivery=None,
+				 await_payment=False):
 	"""A Restaurant Order from any channel, accepted straight away, its lines routed to the branch's kitchen stations."""
 	from restaurant_os.restaurant_os.doctype.kitchen_station.kitchen_station import station_for_item
 
@@ -99,6 +102,10 @@ def create_order(branch, items, channel="POS", order_type=None, customer=None, c
 		station = it.get("station") or station_for_item(branch, it["item_code"])
 		order.append("items", {**it, "station": station, "kds_status": "Queued" if station else "Ready"})
 	order.flags.ignore_permissions = True
+	if await_payment:                                         # paid online: off the KDS until the gateway confirms
+		order.status = "Awaiting Payment"
+		order.insert()
+		return order
 	order.insert()
 	set_status(order, "Accepted", save=False)
 	refresh_status(order)

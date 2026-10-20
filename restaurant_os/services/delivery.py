@@ -37,6 +37,10 @@ def invoice_for_order(order):
 	si.insert()
 	si.submit()
 	order.db_set({"invoice_doctype": "Sales Invoice", "invoice": si.name, "grand_total": si.rounded_total or si.grand_total})
+	if order.get("payment_status") == "Paid":
+		from restaurant_os.services.payments import book_on_invoice
+
+		book_on_invoice(order, si.name)                       # paid online at checkout
 	return si.name
 
 

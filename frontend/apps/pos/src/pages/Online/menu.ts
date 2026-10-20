@@ -10,6 +10,7 @@ export interface Menu {
   branch: { name: string; address?: string; phone?: string; lat: number; lng: number; delivery_radius_km: number; delivery_minutes: number; prep_minutes: number };
   branches: { name: string; address?: string }[]; categories: string[]; items: MenuItem[]; open: number; kiosk_open: number; kiosk_idle_seconds: number;
   delivery_fee: number; min_order: number; tax: { rate: number; included: boolean };
+  online_payment: number; payment_test_mode: boolean;
 }
 export interface Chosen { group: string; name: string }
 export interface CartLine { key: string; item: MenuItem; qty: number; modifiers: Chosen[]; notes?: string }

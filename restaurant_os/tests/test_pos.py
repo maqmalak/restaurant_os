@@ -432,3 +432,39 @@ class TestRestaurantPOS(IntegrationTestCase):
 		held = pos.held_invoices(PROFILE)
 		self.assertTrue(any(h.name == r["invoice"] and h.remarks.startswith("Kiosk K") for h in held), "the cashier sees kiosk orders")
 		self.assertFalse(frappe.db.exists("Restaurant Order", {"invoice": r["invoice"]}), "the kitchen waits for payment")
+
+	def test_online_payment_success_and_decline(self):
+		from restaurant_os.api import online, payments
+
+		cart = [{"item_code": "Chicken Tikka", "qty": 2, "modifiers": [{"group": "Spice Level", "name": "Medium"}]}]
+		r = online.place_order(json.dumps({"order_type": "Delivery", "payment": "Online", "items": cart, "customer_name": "Card Diner",
+										   "phone": "+92 300 4445566", "address": "House 5, Gulberg", "lat": 31.522, "lng": 74.357}))
+		self.assertTrue(r["payment_url"].startswith("/ros/pay/"))
+		o = frappe.get_doc("Restaurant Order", r["order"])
+		self.assertEqual((o.status, o.payment_status, flt(o.cod_amount)), ("Awaiting Payment", "Awaiting", 0))
+		self.assertFalse(any(c["name"] == o.name for c in kds.board()["cards"]), "unpaid online orders stay off the KDS")
+		session = r["payment_url"].rsplit("/", 1)[1]
+		payments.mock_pay(session, "fail")
+		self.assertEqual(frappe.db.get_value("Restaurant Order", o.name, "payment_status"), "Failed")
+		session = payments.retry(r["tracking_key"])["payment_url"].rsplit("/", 1)[1]
+		payments.mock_pay(session, "success")
+		o.reload()
+		self.assertEqual((o.status, o.payment_status), ("Accepted", "Paid"))
+		self.assertTrue(any(c["name"] == o.name for c in kds.board()["cards"]))
+		# delivered (KDS taps) → invoiced and already paid by the online payment
+		while frappe.db.get_value("Restaurant Order", o.name, "status") != "Delivered":
+			kds.advance(o.name)
+		inv = frappe.db.get_value("Restaurant Order", o.name, "invoice")
+		self.assertEqual(flt(frappe.db.get_value("Sales Invoice", inv, "outstanding_amount")), 0)
+		self.assertTrue(frappe.db.exists("Payment Entry", {"mode_of_payment": "Online Payment", "docstatus": 1, "reference_no": o.payment_reference}))
+
+	def test_paid_online_pickup_shows_nothing_to_pay(self):
+		from restaurant_os.api import online, payments
+		from restaurant_os.api.riders import track
+
+		r = online.place_order(json.dumps({"order_type": "Pickup", "payment": "Online", "customer_name": "Paid Pickup", "phone": "03005556677",
+										   "items": [{"item_code": "Chicken Karahi", "qty": 1, "modifiers": [{"group": "Spice Level", "name": "Mild"}]}]}))
+		self.assertGreater(track(r["tracking_key"])["eta_minutes"], 0)
+		payments.mock_pay(r["payment_url"].rsplit("/", 1)[1], "success")
+		t = track(r["tracking_key"])
+		self.assertEqual((t["payment_status"], t["cod_amount"]), ("Paid", 0))

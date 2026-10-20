@@ -112,6 +112,7 @@ function Checkout({ menu, cart, setCart, onClose }: { menu: NonNullable<ReturnTy
   const [type, setType] = useState<"Delivery" | "Pickup">(saved.type ?? "Delivery");
   const [f, setF] = useState({ name: saved.name ?? "", phone: saved.phone ?? "", address: saved.address ?? "", notes: "" });
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(saved.pin ?? null);
+  const [pay, setPay] = useState<"Cash" | "Online">(saved.pay === "Online" && menu.online_payment ? "Online" : "Cash");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [busy, setBusy] = useState(false);
   const uuid = useRef(crypto.randomUUID());
@@ -130,15 +131,18 @@ function Checkout({ menu, cart, setCart, onClose }: { menu: NonNullable<ReturnTy
   const place = async () => {
     setBusy(true);
     try {
-      localStorage.setItem("ros.web.me", JSON.stringify({ type, name: f.name, phone: f.phone, address: f.address, pin }));
-      const r = await postCall<{ tracking_key: string; order_no: string }>("restaurant_os.api.online.place_order", { data: JSON.stringify({
-        branch: menu.branch.name, order_type: type, items, customer_name: f.name, phone: f.phone, address: f.address, notes: f.notes,
+      localStorage.setItem("ros.web.me", JSON.stringify({ type, name: f.name, phone: f.phone, address: f.address, pin, pay }));
+      const r = await postCall<{ tracking_key: string; order_no: string; payment_url?: string }>("restaurant_os.api.online.place_order", { data: JSON.stringify({
+        branch: menu.branch.name, order_type: type, items, customer_name: f.name, phone: f.phone, address: f.address, notes: f.notes, payment: pay,
         lat: pin?.lat, lng: pin?.lng, client_order_uuid: uuid.current,
         source: window.matchMedia("(display-mode: standalone)").matches ? "app" : "web" }) });
       // clear the saved cart right away: navigating unmounts this page before its save-to-storage effect would run
       try { localStorage.removeItem(CART_KEY); } catch { /* private mode */ }
       setCart(() => []);
-      navigate(`/track/${r.tracking_key}`);
+      if (r.payment_url) {                                   // pay online: the gateway (or the in-app test gateway)
+        if (r.payment_url.startsWith("/ros/")) navigate(r.payment_url.replace(/^\/ros/, ""));
+        else window.location.assign(r.payment_url);
+      } else navigate(`/track/${r.tracking_key}`);
     } catch (e) { toast.error(humanizeError(e)); } finally { setBusy(false); }
   };
   const input = (k: keyof typeof f, label: string, type = "text", required = true) => (
@@ -186,8 +190,17 @@ function Checkout({ menu, cart, setCart, onClose }: { menu: NonNullable<ReturnTy
           </div>
           <div className="rounded-2xl border border-border p-3 text-sm">
             <div className="mb-2 font-semibold">Payment</div>
-            <div className="flex items-center gap-2 rounded-xl border border-primary bg-primary/5 p-3"><span className="h-4 w-4 rounded-full border-4 border-primary" />Cash on {type === "Delivery" ? "delivery" : "pickup"}</div>
-            <div className="mt-2 flex items-center gap-2 rounded-xl border border-border p-3 text-muted-foreground opacity-60"><span className="h-4 w-4 rounded-full border border-border" />Card / wallet online — coming soon</div>
+            {([["Cash", `Cash on ${type === "Delivery" ? "delivery" : "pickup"}`, "Pay when you get your food"],
+               ["Online", "Pay online — card / wallet", menu.payment_test_mode ? "Test gateway: no real money is charged" : "Secure payment page"]] as const).map(([k, label, hint]) => {
+              const disabled = k === "Online" && !menu.online_payment;
+              return (
+                <button key={k} type="button" disabled={disabled} onClick={() => setPay(k)}
+                  className={cn("mt-2 flex w-full items-center gap-3 rounded-xl border p-3 text-left first:mt-0 disabled:opacity-50", pay === k ? "border-primary bg-primary/5" : "border-border")}>
+                  <span className={cn("h-4 w-4 shrink-0 rounded-full", pay === k ? "border-4 border-primary" : "border border-border")} />
+                  <span><span className="block font-medium">{label}</span><span className="block text-xs text-muted-foreground">{disabled ? "Not available right now" : hint}</span></span>
+                </button>
+              );
+            })}
           </div>
           {quote && <div className="space-y-1 text-sm">
             <div className="flex justify-between"><span>Subtotal</span><span>{money(quote.subtotal, cur)}</span></div>
@@ -200,7 +213,7 @@ function Checkout({ menu, cart, setCart, onClose }: { menu: NonNullable<ReturnTy
           {belowMin && <p className="mb-2 text-center text-xs text-red-600">Add {money(menu.min_order - subtotalNoFee, cur)} more to reach the minimum order.</p>}
           <button disabled={busy || !cart.length || !f.name.trim() || f.phone.replace(/\D/g, "").length < 10 || belowMin || far || (type === "Delivery" && !f.address.trim()) || !menu.open}
             onClick={() => void place()} className="h-14 w-full rounded-2xl bg-primary text-lg font-bold text-primary-foreground disabled:opacity-50">
-            {busy ? "Placing your order…" : `Place order${quote ? ` · ${money(quote.total, cur)}` : ""}`}</button>
+            {busy ? "Placing your order…" : `${pay === "Online" ? "Pay" : "Place order"}${quote ? ` · ${money(quote.total, cur)}` : ""}`}</button>
         </div>
       </div>
     </div>

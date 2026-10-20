@@ -64,6 +64,15 @@
   "min_order_amount",
   "kiosk_enabled",
   "kiosk_idle_seconds",
+  "section_online_pay",
+  "online_payment_enabled",
+  "payment_gateway_mode",
+  "payment_gateway",
+  "online_payment_mode",
+  "column_break_op",
+  "gateway_merchant_id",
+  "gateway_api_key",
+  "gateway_secret",
   "section_foodpanda",
   "aggregator_mode",
   "foodpanda_delivery_by",
@@ -397,6 +406,64 @@
    "fieldtype": "Int",
    "label": "Kiosk Resets After (seconds idle)",
    "default": "90"
+  },
+  {
+   "fieldname": "section_online_pay",
+   "fieldtype": "Section Break",
+   "label": "Online Payment",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "online_payment_enabled",
+   "fieldtype": "Check",
+   "label": "Accept Online Payment",
+   "default": "1",
+   "description": "Card / wallet at checkout, next to cash"
+  },
+  {
+   "fieldname": "payment_gateway_mode",
+   "fieldtype": "Select",
+   "label": "Mode",
+   "options": "Mock\nLive",
+   "default": "Mock",
+   "description": "Mock: a built-in test gateway \u2014 no money moves"
+  },
+  {
+   "fieldname": "payment_gateway",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "Safepay\nPayFast\nJazzCash\nEasypaisa\nBank Gateway",
+   "default": "Safepay",
+   "depends_on": "eval:doc.payment_gateway_mode=='Live'"
+  },
+  {
+   "fieldname": "online_payment_mode",
+   "fieldtype": "Link",
+   "label": "Mode of Payment",
+   "options": "Mode of Payment",
+   "description": "Booked on the invoice when paid online"
+  },
+  {
+   "fieldname": "column_break_op",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gateway_merchant_id",
+   "fieldtype": "Data",
+   "label": "Merchant ID",
+   "depends_on": "eval:doc.payment_gateway_mode=='Live'"
+  },
+  {
+   "fieldname": "gateway_api_key",
+   "fieldtype": "Password",
+   "label": "API Key",
+   "depends_on": "eval:doc.payment_gateway_mode=='Live'"
+  },
+  {
+   "fieldname": "gateway_secret",
+   "fieldtype": "Password",
+   "label": "Secret / Webhook Key",
+   "depends_on": "eval:doc.payment_gateway_mode=='Live'"
   },
   {
    "fieldname": "section_foodpanda",

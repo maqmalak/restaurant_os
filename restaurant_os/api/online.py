@@ -91,6 +91,7 @@ def menu(branch: str | None = None) -> dict:
 		"branches": frappe.get_all("Restaurant Branch", {"disabled": 0}, ["name", "address"]),
 		"categories": [g for g in groups if any(i.item_group == g for i in items)], "items": items,
 		"open": cint(s.online_ordering_enabled), "kiosk_open": cint(s.kiosk_enabled), "kiosk_idle_seconds": cint(s.kiosk_idle_seconds) or 90,
+		"online_payment": cint(s.online_payment_enabled), "payment_test_mode": s.payment_gateway_mode != "Live",
 		"delivery_fee": flt(s.delivery_fee), "min_order": flt(s.min_order_amount),
 		"tax": {"rate": flt(tax), "included": s.tax_included_in_price == "Tax included in item price"},
 		"currency": frappe.get_cached_value("Company", company, "default_currency"),
@@ -226,17 +227,26 @@ def place_order(data: str) -> dict:
 	customer = _customer(name, d.get("phone"))
 	bill = _bill(branch, rows, customer)
 	channel = "App" if d.get("source") == "app" else "Web"
+	online = d.get("payment") == "Online"
+	if online and not cint(s.online_payment_enabled):
+		frappe.throw(_("Online payment is not available — choose cash."))
+	payment_url = None
 	with as_system():
 		order = create_order(branch, rows, channel=channel, order_type=order_type, customer=customer, customer_name=name,
 							 notes=(d.get("notes") or "").strip()[:500] or None, client_order_uuid=f"web:{uuid}" if uuid else None,
-							 grand_total=bill["total"],
+							 grand_total=bill["total"], await_payment=online,
 							 delivery={"delivery_phone": d.get("phone"), "delivery_address": (d.get("address") or "").strip() or None,
 									   "delivery_lat": lat or None, "delivery_lng": lng or None,
-									   "cod_amount": bill["total"] if order_type == "Delivery" else 0})
+									   "cod_amount": bill["total"] if order_type == "Delivery" and not online else 0,
+									   "payment_method": "Online" if online else "Cash", "payment_status": "Awaiting" if online else "Unpaid"})
 		if not order.tracking_key:                            # pickup orders get a tracking link too
 			order.db_set("tracking_key", frappe.generate_hash(length=12))
+		if online:
+			from restaurant_os.services.payments import start
+
+			payment_url = start(order.name)
 	return {"order": order.name, "order_no": order.order_no, "tracking_key": frappe.db.get_value("Restaurant Order", order.name, "tracking_key"),
-			"total": bill["total"]}
+			"total": bill["total"], "payment_url": payment_url}
 
 
 # ------------------------------------------------------------------ kiosk

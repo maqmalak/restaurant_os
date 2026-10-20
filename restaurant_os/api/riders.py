@@ -228,14 +228,15 @@ def track(key: str) -> dict:
 	company = frappe.get_cached_value("Restaurant Branch", o.branch, "company")
 	return {
 		"order_no": o.order_no, "status": status, "raw_status": o.status, "steps": steps, "step": steps.index(status) if status in steps else -1,
-		"order_type": o.order_type,
+		"order_type": o.order_type, "payment_method": o.payment_method, "payment_status": o.payment_status,
+		"awaiting_payment": o.status == "Awaiting Payment",
 		"cancelled": o.status in ("Cancelled", "Rejected"), "restaurant": company, "branch": o.branch,
 		"logo": frappe.get_cached_value("Company", company, "company_logo"),
 		"branch_point": {"lat": blat, "lng": blng}, "drop": {"lat": o.delivery_lat, "lng": o.delivery_lng, "address": o.delivery_address},
 		"rider": {"name": rider_name, "phone": rider_phone if o.status in svc.ON_ROAD else None,
 				  "lat": pos[0] if pos else None, "lng": pos[1] if pos else None, "by": o.delivery_by},
 		"eta_minutes": svc.eta_minutes(o, pos), "delivery_code": o.delivery_otp if o.status not in ("Delivered", "Completed") else None,
-		"cod_amount": flt(o.cod_amount) or (flt(o.grand_total) if o.order_type == "Pickup" and not o.invoice else 0),
+		"cod_amount": flt(o.cod_amount) or (flt(o.grand_total) if o.order_type == "Pickup" and not o.invoice and o.payment_status != "Paid" else 0),
 		"items": [{"item_name": r.item_name, "qty": r.qty, "modifiers": r.modifiers} for r in o.items if r.kds_status != "Void"],
 		"placed_at": str(o.placed_at),
 	}

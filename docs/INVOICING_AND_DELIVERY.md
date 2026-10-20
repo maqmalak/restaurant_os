@@ -9,8 +9,9 @@ reaches the customer, and where the money and stock go. The last section lists t
 | Dine-in (table) | At **Settle**, after eating | Cashier | POS Invoice |
 | Delivery by own rider | When **Delivered** | Rider (cash on delivery) → counter | Sales Invoice |
 | Foodpanda | When **Delivered** | Foodpanda (pays the restaurant later) | Sales Invoice to "Foodpanda" |
-| Online — delivery | When **Delivered** | Rider (cash on delivery) → counter | Sales Invoice to the customer |
-| Online — pickup | When **Collected** | Cashier (Receive payment) | Sales Invoice to the customer |
+| Online — delivery, cash | When **Delivered** | Rider (cash on delivery) → counter | Sales Invoice to the customer |
+| Online — pickup, cash | When **Collected** | Cashier (Receive payment) | Sales Invoice to the customer |
+| Online — paid online (card / wallet) | When **Delivered / Collected** | Payment gateway, at checkout | Sales Invoice, already paid |
 | Kiosk | At the counter, **before** cooking | Cashier | POS Invoice (from the held kiosk sale) |
 
 Every invoice gets sales tax (Restaurant Settings), the FBR POS fee and an FBR invoice number, printed with its QR code.
@@ -134,6 +135,15 @@ still invoiced to Foodpanda when delivered.
    **tracking page**. The customer record is found by mobile number or created, so repeat customers are recognised.
 3. Delivery orders then follow section 3 (rider, cash on delivery, invoice at **Delivered**). Pickup orders are invoiced when
    the KDS marks them **Completed** (collected); the cashier takes the money with **POS → Receive payment** for that customer.
+
+**Paying online.** At checkout the customer chooses **Cash** or **Pay online (card / wallet)**:
+- *Cash*: as above — the order goes to the kitchen at once.
+- *Pay online*: the order is saved as **Awaiting Payment** and does **not** reach the kitchen yet. The customer is sent to the
+  payment page (in **Mock** mode a built-in test gateway — no money moves). When the payment succeeds the order goes to the KDS
+  and the customer lands on the tracking page, which shows **Paid online**; the rider has nothing to collect. If it fails, the
+  tracking page offers **Pay now** to try again. When the order is delivered / collected, its Sales Invoice is created and
+  immediately paid by a Payment Entry in the **Online Payment** mode (account *Online Payment Clearing*), where the gateway's
+  payout is later matched. Restaurant Settings → Online Payment holds the switch, the mode and the live provider's keys.
 
 **Kiosk** (`/ros/kiosk`, a touch screen in the restaurant):
 1. The guest chooses **Eat in / Take away**, dishes and add-ons, and optionally a name, then **Order · pay at counter**.

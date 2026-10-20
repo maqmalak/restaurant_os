@@ -70,6 +70,12 @@ def ensure_accounts():
 		mop.enabled = 1
 		mop.save(ignore_permissions=True)
 	rider = _account("Rider Cash", "Cash In Hand", "Cash")       # cash on delivery until the rider hands it over
+	online = _account("Online Payment Clearing", "Bank Accounts", "Bank")   # the gateway pays out from here
+	mop = frappe.get_doc("Mode of Payment", "Online Payment") if frappe.db.exists("Mode of Payment", "Online Payment") else \
+		frappe.get_doc({"doctype": "Mode of Payment", "mode_of_payment": "Online Payment", "type": "Bank", "enabled": 1})
+	if not any(a.company == COMPANY for a in mop.accounts):
+		mop.append("accounts", {"company": COMPANY, "default_account": online})
+	mop.save(ignore_permissions=True)
 	return {"card": card, "back_office": back, "bank": bank, "rider": rider}
 
 
@@ -258,6 +264,8 @@ def ensure_settings(branch, accounts):
 							"description": "Delivery fee on online / phone orders"}).insert(ignore_permissions=True)
 		s.update({"delivery_fee_item": "Delivery Charge", "delivery_fee": s.delivery_fee or 150, "min_order_amount": s.min_order_amount or 500,
 				  "online_ordering_enabled": 1, "kiosk_enabled": 1, "kiosk_idle_seconds": s.kiosk_idle_seconds or 90})
+	if not s.online_payment_mode:
+		s.update({"online_payment_mode": "Online Payment", "online_payment_enabled": 1, "payment_gateway_mode": "Mock", "payment_gateway": "Safepay"})
 	if not s.rider_float_account:
 		s.update({"rider_float_account": accounts["rider"], "avg_rider_speed_kmh": s.avg_rider_speed_kmh or 20,
 				  "foodpanda_delivery_by": s.foodpanda_delivery_by or "Foodpanda Rider"})

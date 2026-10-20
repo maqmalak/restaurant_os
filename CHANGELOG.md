@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-21 — Online payment (cash + card / wallet) for web orders
+
+- Checkout offers **Cash** or **Pay online**; online orders wait as *Awaiting Payment* (off the KDS) until the gateway confirms,
+  then go to the kitchen; failed payments can be retried from the tracking page ("Pay now").
+- Gateway adapter: **Mock** test gateway page `/ros/pay/<session>` (approve / decline), Live placeholder for Safepay / PayFast /
+  JazzCash / Easypaisa / bank gateway (hosted checkout + HMAC-signed webhook `restaurant_os.api.payments.webhook`).
+- Paid orders: nothing to collect; their invoice (at delivered / collected) is settled by a Payment Entry in mode *Online
+  Payment* → *Online Payment Clearing*. Payment sessions are Integration Requests.
+- Fixes: lines no kitchen station makes (delivery fee) no longer move a new order to Preparing; the saved web cart clears after
+  ordering; pickup tracking says "Ready for pickup in" and shows nothing to pay when paid online.
+- Tests: 27 backend + Vitest passing.
+
 ## 2026-10-21 — Phase 6: online ordering & self-order kiosk
 
 - **Ordering site** `/ros/order` (public, installable PWA): menu by category with photos, sold-out locking, add-ons

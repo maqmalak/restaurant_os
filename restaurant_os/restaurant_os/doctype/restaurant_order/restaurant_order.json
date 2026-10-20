@@ -46,6 +46,11 @@
   "rider",
   "delivery_assignment",
   "cod_amount",
+  "payment_method",
+  "payment_status",
+  "paid_amount",
+  "payment_reference",
+  "payment_request",
   "distance_km",
   "delivery_otp",
   "tracking_key",
@@ -93,7 +98,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Placed\nAccepted\nPreparing\nReady\nPicked Up\nOut for Delivery\nDelivered\nCompleted\nCancelled\nRejected\nReturned",
+   "options": "Awaiting Payment\nPlaced\nAccepted\nPreparing\nReady\nPicked Up\nOut for Delivery\nDelivered\nCompleted\nCancelled\nRejected\nReturned",
    "default": "Placed",
    "in_list_view": 1,
    "in_standard_filter": 1,
@@ -286,6 +291,40 @@
    "fieldtype": "Currency",
    "label": "Cash to Collect",
    "description": "0 when paid in advance / aggregator"
+  },
+  {
+   "fieldname": "payment_method",
+   "fieldtype": "Select",
+   "label": "Payment Method",
+   "options": "\nCash\nOnline",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_status",
+   "fieldtype": "Select",
+   "label": "Payment Status",
+   "options": "\nUnpaid\nAwaiting\nPaid\nFailed\nRefunded",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "paid_amount",
+   "fieldtype": "Currency",
+   "label": "Paid Online",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_reference",
+   "fieldtype": "Data",
+   "label": "Payment Reference",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_request",
+   "fieldtype": "Link",
+   "label": "Payment Session",
+   "options": "Integration Request",
+   "read_only": 1
   },
   {
    "fieldname": "distance_km",
