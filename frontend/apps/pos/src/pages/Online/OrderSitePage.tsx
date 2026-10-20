@@ -6,7 +6,7 @@ import { LiveMap } from "@/components/common/live-map";
 import { getCall, humanizeError, postCall } from "@/services/frappe";
 import { cn } from "@/utils/cn";
 import { ItemSheet } from "./ItemSheet";
-import { type CartLine, cartPayload, linePrice, type MenuItem, money, useMenu } from "./menu";
+import { type CartLine, cartPayload, catIcon, linePrice, type MenuItem, money, SERIF_FONT, useMenu } from "./menu";
 
 interface Quote { subtotal: number; tax: number; total: number; taxes: { description: string; amount: number }[]; distance_km?: number; min_order: number;
   discount: number; offers: string[]; coupon?: string | null; points: number; points_value: number; to_pay: number;
@@ -24,6 +24,20 @@ export default function OrderSitePage() {
   const [cart, setCart] = useState<CartLine[]>(load);
   const [checkout, setCheckout] = useState(false);
   const sections = useRef<Record<string, HTMLElement | null>>({});
+  const tabs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const pinned = useRef(0);                                   // a tab was just tapped: let the smooth scroll finish first
+  useEffect(() => {                                           // the active tab follows the section being read
+    if (!menu) return;
+    const io = new IntersectionObserver((entries) => {
+      if (Date.now() - pinned.current < 900) return;
+      const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      const c = top?.target.getAttribute("data-cat");
+      if (c) setCat(c);
+    }, { rootMargin: "-140px 0px -50% 0px" });
+    Object.values(sections.current).forEach((el) => el && io.observe(el));
+    return () => io.disconnect();
+  }, [menu]);
+  useEffect(() => { if (cat) tabs.current[cat]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" }); }, [cat]);
   useEffect(() => {                                          // save — unless it's already what's stored (e.g. synced from another tab)
     try { const v = JSON.stringify(cart); if (localStorage.getItem(CART_KEY) !== v) localStorage.setItem(CART_KEY, v); } catch { /* private mode */ }
   }, [cart]);
@@ -67,19 +81,39 @@ export default function OrderSitePage() {
         {!menu.open && <div className="mx-auto mt-3 max-w-5xl rounded-lg bg-black/30 px-3 py-2 text-sm font-semibold">Online ordering is closed right now.</div>}
       </header>
 
-      <nav className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl gap-2 overflow-x-auto px-4 py-2">
-          {menu.categories.map((c) => (
-            <button key={c} onClick={() => { setCat(c); sections.current[c]?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
-              className={cn("whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold", cat === c ? "bg-primary text-primary-foreground" : "bg-muted")}>{c}</button>
-          ))}
+      <style>{`${SERIF_FONT} .os-serif{font-family:Fraunces,Georgia,serif;letter-spacing:-.01em} .os-tabs::-webkit-scrollbar{height:0}`}</style>
+      <nav className="sticky top-0 z-20 border-b border-border/60 bg-background/80 shadow-[0_8px_30px_-20px_rgba(0,0,0,.5)] backdrop-blur-xl">
+        <div className="os-tabs mx-auto flex max-w-5xl gap-2 overflow-x-auto px-4 py-3">
+          {menu.categories.map((c) => {
+            const Icon = catIcon(c);
+            const on = (cat || menu.categories[0]) === c;
+            const n = menu.items.filter((i) => i.item_group === c).length;
+            return (
+              <button key={c} ref={(el) => { tabs.current[c] = el; }} aria-current={on ? "true" : undefined}
+                onClick={() => { setCat(c); pinned.current = Date.now(); sections.current[c]?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                className={cn("group flex shrink-0 items-center gap-2 rounded-2xl border py-1.5 pl-1.5 pr-4 text-sm font-semibold transition-all duration-300",
+                  on ? "border-transparent bg-gradient-to-r from-[#f5c46b] to-[#e59a3a] text-[#1a1208] shadow-[0_10px_24px_-12px_rgba(229,154,58,.9)]"
+                    : "border-border bg-card text-foreground/75 hover:border-[#f5c46b]/40 hover:text-foreground")}>
+                <span className={cn("flex h-8 w-8 items-center justify-center rounded-xl transition-colors", on ? "bg-black/10" : "bg-muted group-hover:bg-[#f5c46b]/15")}><Icon className="h-4 w-4" /></span>
+                <span className="whitespace-nowrap">{c}</span>
+                <span className={cn("rounded-full px-1.5 text-[11px] tabular-nums", on ? "bg-black/10" : "bg-muted text-muted-foreground")}>{n}</span>
+              </button>
+            );
+          })}
         </div>
       </nav>
 
       <main className="mx-auto max-w-5xl space-y-8 px-4 py-5">
         {menu.categories.map((c) => (
-          <section key={c} ref={(el) => { sections.current[c] = el; }} className="scroll-mt-16">
-            <h2 className="mb-3 text-xl font-bold">{c}</h2>
+          <section key={c} ref={(el) => { sections.current[c] = el; }} data-cat={c} className="scroll-mt-20">
+            <div className="mb-4 flex items-end gap-3">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#c98a2b] dark:text-[#f5c46b]/85">Freshly made</div>
+                <h2 className="os-serif mt-0.5 text-3xl font-semibold leading-none">{c}</h2>
+              </div>
+              <span className="mb-0.5 text-sm text-muted-foreground">{menu.items.filter((i) => i.item_group === c).length} dishes</span>
+              <span className="mb-2 h-px flex-1 bg-gradient-to-r from-[#e59a3a]/50 via-[#e59a3a]/15 to-transparent" />
+            </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {menu.items.filter((i) => i.item_group === c).map((i) => (
                 <button key={i.item_code} disabled={i.sold_out || !menu.open} onClick={() => setOpen(i)}

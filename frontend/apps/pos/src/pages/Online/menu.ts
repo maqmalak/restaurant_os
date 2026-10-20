@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CookingPot, Croissant, CupSoda, Fish, Flame, Salad, UtensilsCrossed, type LucideIcon } from "lucide-react";
 import { getCall } from "@/services/frappe";
 
 export interface ModOption { name: string; price: number; item?: string; default: number }
@@ -47,3 +48,11 @@ export function useMenu(branch?: string) {
 }
 
 export const money = (v: number, currency = "PKR") => `${currency === "PKR" ? "Rs" : currency} ${Math.round(v).toLocaleString()}`;
+
+/** A menu category's icon, guessed from its name (falls back to cutlery) — kiosk rail and ordering-site tabs. */
+const CAT_ICONS: [RegExp, LucideIcon][] = [[/bbq|grill|tikka|kabab/i, Flame], [/handi|curry|karahi/i, CookingPot], [/fish|sea/i, Fish],
+  [/breakfast|paratha|bakery/i, Croissant], [/drink|beverage|juice|tea|coffee/i, CupSoda], [/side|add-on|salad|extra/i, Salad]];
+export const catIcon = (c: string) => CAT_ICONS.find(([re]) => re.test(c))?.[1] ?? UtensilsCrossed;
+
+/** The display serif used by the guest-facing pages (kiosk, ordering site, customer display). */
+export const SERIF_FONT = "@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap');";

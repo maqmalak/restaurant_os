@@ -1,12 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Hand, Minus, Plus, ShoppingBag, Trash2, Utensils, Store } from "lucide-react";
+import { ArrowLeft, Hand, Minus, Plus, RotateCcw, ShoppingBag, Sparkles, Store, Trash2, Utensils, UtensilsCrossed } from "lucide-react";
 import { humanizeError, postCall } from "@/services/frappe";
 import { cn } from "@/utils/cn";
 import { ItemSheet } from "./ItemSheet";
-import { type CartLine, cartPayload, linePrice, type MenuItem, money, useMenu } from "./menu";
+import { type CartLine, cartPayload, catIcon, linePrice, type MenuItem, money, SERIF_FONT, useMenu } from "./menu";
 
 type Stage = "welcome" | "type" | "menu" | "done";
+
+/* Fonts + small motion for the kiosk menu (same look as the customer display). */
+const KIOSK_STYLE = `
+${SERIF_FONT}
+.kiosk .serif { font-family: Fraunces, Georgia, serif; letter-spacing: -0.01em; }
+.kiosk .gold-grad { background: linear-gradient(120deg, #fde3a7, #f5c46b 45%, #e59a3a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.kiosk .glass { background: linear-gradient(160deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+@keyframes kiosk-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.kiosk .rise { animation: kiosk-rise .5s cubic-bezier(.2,.7,.2,1) both; }
+.kiosk ::-webkit-scrollbar { width: 0; height: 0; }
+@media (prefers-reduced-motion: reduce) { .kiosk * { animation: none !important; transition: none !important; } }
+`;
 interface Quote { subtotal: number; tax: number; total: number; discount: number; offers: string[] }
 
 /** Self-order kiosk: touch to start → eat in / take away → big menu → pay at the counter (order number). Resets when idle. */
@@ -21,8 +33,9 @@ export default function KioskPage() {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [done, setDone] = useState<{ number: string; total: number } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);   // "Start over" with items in the cart asks once more
 
-  const reset = useCallback(() => { setStage("welcome"); setCart([]); setOpen(null); setName(""); setDone(null); setQuote(null); }, []);
+  const reset = useCallback(() => { setConfirmReset(false); setStage("welcome"); setCart([]); setOpen(null); setName(""); setDone(null); setQuote(null); }, []);
   // idle reset (and back to the welcome screen 25 s after the order number shows)
   useEffect(() => {
     if (stage === "welcome") return;
@@ -32,6 +45,7 @@ export default function KioskPage() {
     ["pointerdown", "keydown"].forEach((e) => window.addEventListener(e, bump));
     return () => { clearTimeout(t); ["pointerdown", "keydown"].forEach((e) => window.removeEventListener(e, bump)); };
   }, [stage, menu?.kiosk_idle_seconds, reset]);
+  useEffect(() => { if (!confirmReset) return; const t = setTimeout(() => setConfirmReset(false), 4000); return () => clearTimeout(t); }, [confirmReset]);
   useEffect(() => {
     if (!cart.length) { setQuote(null); return; }
     const t = setTimeout(() => postCall<Quote>("restaurant_os.api.online.kiosk_quote", { data: JSON.stringify({ items: cartPayload(cart) }) }).then(setQuote).catch(() => undefined), 250);
@@ -62,17 +76,37 @@ export default function KioskPage() {
     </button>
   );
 
-  if (stage === "type") return (
-    <div className="flex h-screen flex-col items-center justify-center gap-10 bg-neutral-950 text-white">
-      <h2 className="text-5xl font-bold">Where will you eat?</h2>
-      <div className="grid grid-cols-2 gap-8">
-        {([["Dine-in", "Eat in", Utensils], ["Takeaway", "Take away", Store]] as const).map(([t, label, Icon]) => (
-          <button key={t} onClick={() => { setType(t); setStage("menu"); }} className="flex h-72 w-72 flex-col items-center justify-center gap-6 rounded-3xl bg-white/10 text-4xl font-bold ring-2 ring-white/20 hover:bg-white/20">
-            <Icon className="h-24 w-24" />{label}</button>
-        ))}
+  if (stage === "type") {
+    const hero = menu.items.find((i) => i.image && !i.sold_out)?.image;
+    return (
+      <div className="kiosk relative flex h-screen flex-col items-center justify-center overflow-hidden bg-[#0b0a09] px-8 text-[#f6efe4]">
+        <style>{KIOSK_STYLE}</style>
+        {hero && <img src={hero} alt="" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-25 blur-2xl" />}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0b0a09]/70 via-[#0b0a09]/85 to-[#0b0a09]" />
+        <div className="pointer-events-none absolute -top-40 left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-[#e59a3a]/15 blur-[120px]" />
+        <button onClick={reset} className="absolute left-8 top-8 z-10 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 py-2.5 text-base text-white/60 backdrop-blur hover:bg-white/10 hover:text-white">
+          <ArrowLeft className="h-4 w-4" /> Back</button>
+        <div className="relative z-10 flex flex-col items-center">
+          {menu.logo && <img src={menu.logo} alt="" className="rise mb-8 h-16 w-auto rounded-2xl bg-white/95 px-3 py-2 shadow-2xl" />}
+          <div className="rise text-sm font-semibold uppercase tracking-[0.35em] text-[#f5c46b]/85" style={{ animationDelay: ".05s" }}>Welcome to {menu.restaurant}</div>
+          <h2 className="serif rise mt-3 text-center text-6xl font-semibold" style={{ animationDelay: ".1s" }}>Where will you eat today?</h2>
+          <div className="mt-14 grid grid-cols-2 gap-8">
+            {([["Dine-in", "Eat in", "Enjoy it at our tables", Utensils], ["Takeaway", "Take away", "Packed fresh to go", Store]] as const).map(([t, label, sub, Icon], k) => (
+              <button key={t} onClick={() => { setType(t); setStage("menu"); }} style={{ animationDelay: `${0.18 + k * 0.08}s` }}
+                className="glass rise group relative flex h-80 w-80 flex-col items-center justify-center gap-5 overflow-hidden rounded-[2.25rem] border border-white/10 shadow-[0_30px_80px_-30px_rgba(0,0,0,.9)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[#f5c46b]/50 hover:shadow-[0_30px_80px_-25px_rgba(229,154,58,.45)] active:scale-[0.98]">
+                <span className="pointer-events-none absolute inset-x-10 -top-16 h-32 rounded-full bg-[#f5c46b]/0 blur-3xl transition-colors duration-500 group-hover:bg-[#f5c46b]/20" />
+                <span className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-[#f5c46b] to-[#e59a3a] text-[#1a1208] shadow-[0_18px_40px_-15px_rgba(229,154,58,.9)] transition-transform duration-300 group-hover:scale-105">
+                  <Icon className="h-12 w-12" strokeWidth={1.75} /></span>
+                <span className="serif text-4xl font-semibold">{label}</span>
+                <span className="text-lg text-white/55">{sub}</span>
+              </button>
+            ))}
+          </div>
+          <p className="rise mt-12 text-base text-white/40" style={{ animationDelay: ".4s" }}>Order here · pay at the counter</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   if (stage === "done" && done) return (
     <button onClick={reset} className="flex h-screen w-full flex-col items-center justify-center gap-6 bg-gradient-to-br from-green-600 to-teal-700 text-white">
@@ -83,53 +117,111 @@ export default function KioskPage() {
     </button>
   );
 
+  const inCat = menu.items.filter((i) => i.item_group === category);
   return (
-    <div className="flex h-screen overflow-hidden bg-neutral-100 text-neutral-900 dark:bg-neutral-950 dark:text-white">
-      <aside className="flex w-56 shrink-0 flex-col gap-2 overflow-y-auto bg-white p-3 dark:bg-neutral-900">
-        {menu.logo && <img src={menu.logo} alt="" className="mb-3 h-14 w-auto self-center rounded-lg bg-white p-1" />}
-        {menu.categories.map((c) => (
-          <button key={c} onClick={() => setCat(c)} className={cn("rounded-2xl px-4 py-5 text-left text-xl font-bold", category === c ? "bg-primary text-primary-foreground" : "bg-neutral-100 dark:bg-white/5")}>{c}</button>
-        ))}
-        <button onClick={reset} className="mt-auto rounded-2xl border border-neutral-300 py-4 text-lg dark:border-white/20">Start over</button>
+    <div className="kiosk flex h-screen overflow-hidden bg-[#0b0a09] text-[#f6efe4]">
+      <style>{KIOSK_STYLE}</style>
+      {/* category rail */}
+      <aside className="relative flex w-64 shrink-0 flex-col overflow-hidden border-r border-white/[0.06] bg-gradient-to-b from-[#16120e] to-[#0d0b09]">
+        <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#e59a3a]/10 blur-3xl" />
+        <div className="relative px-5 pb-4 pt-6">
+          {menu.logo ? <img src={menu.logo} alt="" className="h-12 w-auto rounded-xl bg-white/95 px-2 py-1 shadow-lg" />
+            : <div className="serif text-2xl font-semibold">{menu.restaurant}</div>}
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#f5c46b]/30 bg-[#f5c46b]/10 px-3 py-1 text-sm font-semibold text-[#f5c46b]">
+            {type === "Dine-in" ? <Utensils className="h-4 w-4" /> : <Store className="h-4 w-4" />}{type === "Dine-in" ? "Eating in" : "Taking away"}</div>
+        </div>
+        <div className="px-5 pb-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white/35">Menu</div>
+        <nav className="relative flex-1 space-y-1.5 overflow-y-auto px-3 pb-3">
+          {menu.categories.map((c) => {
+            const Icon = catIcon(c);
+            const on = category === c;
+            const n = menu.items.filter((i) => i.item_group === c && !i.sold_out).length;
+            return (
+              <button key={c} onClick={() => setCat(c)} aria-current={on ? "page" : undefined}
+                className={cn("group relative flex w-full items-center gap-3.5 rounded-2xl px-3.5 py-3.5 text-left transition-all duration-300",
+                  on ? "bg-gradient-to-r from-[#f5c46b] to-[#e59a3a] text-[#1a1208] shadow-[0_12px_30px_-12px_rgba(229,154,58,.7)]" : "text-white/75 hover:bg-white/[0.05] hover:text-white")}>
+                <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors",
+                  on ? "bg-black/15" : "bg-white/[0.06] group-hover:bg-white/10")}><Icon className="h-5 w-5" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-lg font-semibold leading-tight">{c}</span>
+                  <span className={cn("block text-xs", on ? "text-black/55" : "text-white/40")}>{n} item{n === 1 ? "" : "s"}</span>
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+        <div className="relative border-t border-white/[0.06] p-3">
+          <button onClick={() => (cart.length && !confirmReset ? setConfirmReset(true) : reset())}
+            className={cn("group flex w-full items-center justify-center gap-2.5 rounded-2xl border py-3.5 text-base font-medium transition-all duration-300",
+              confirmReset ? "border-red-400/40 bg-red-500/10 text-red-200" : "border-white/10 bg-white/[0.03] text-white/60 hover:border-[#f5c46b]/40 hover:bg-[#f5c46b]/[0.06] hover:text-[#fde3a7]")}>
+            <RotateCcw className={cn("h-4 w-4 transition-transform duration-500", !confirmReset && "group-hover:-rotate-180")} />
+            {confirmReset ? "Tap again to clear" : "Start over"}</button>
+        </div>
       </aside>
-      <main className="min-w-0 flex-1 overflow-y-auto p-5">
-        <h2 className="mb-4 text-3xl font-bold">{category}</h2>
-        <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
-          {menu.items.filter((i) => i.item_group === category).map((i) => (
-            <button key={i.item_code} disabled={i.sold_out} onClick={() => setOpen(i)} className="overflow-hidden rounded-3xl bg-white text-left shadow-lg disabled:opacity-50 dark:bg-neutral-900">
-              <div className="relative h-44 bg-neutral-200 dark:bg-white/5">{i.image && <img src={i.image} alt="" className="h-full w-full object-cover" />}
-                {i.sold_out && <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-2xl font-black text-white">SOLD OUT</span>}</div>
-              <div className="p-4"><div className="text-xl font-bold">{i.item_name}</div><div className="mt-1 text-lg font-semibold text-primary">{money(i.price, cur)}</div></div>
+
+      {/* dishes */}
+      <main className="min-w-0 flex-1 overflow-y-auto px-8 pb-10 pt-7">
+        <div key={category} className="rise mb-6 flex items-end justify-between gap-4">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.3em] text-[#f5c46b]/80">Freshly made</div>
+            <h2 className="serif mt-1 text-5xl font-semibold">{category}</h2>
+          </div>
+          {menu.offers && menu.offers.length > 0 && (
+            <div className="hidden max-w-sm items-center gap-2 rounded-2xl border border-[#f5c46b]/20 bg-[#f5c46b]/[0.07] px-4 py-2.5 text-sm text-[#fde3a7] xl:flex">
+              <Sparkles className="h-4 w-4 shrink-0 text-[#f5c46b]" /><span className="truncate">{menu.offers[0].title}</span></div>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-5 xl:grid-cols-3">
+          {inCat.map((i, k) => (
+            <button key={i.item_code} disabled={i.sold_out} onClick={() => setOpen(i)} style={{ animationDelay: `${Math.min(k, 8) * 45}ms` }}
+              className="rise group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-white/[0.07] bg-[#15120f] text-left shadow-[0_20px_50px_-25px_rgba(0,0,0,.8)] transition-all duration-300 hover:-translate-y-1 hover:border-[#f5c46b]/30 active:scale-[0.98] disabled:pointer-events-none">
+              <div className="relative aspect-[4/3] overflow-hidden bg-white/5">
+                {i.image
+                  ? <img src={i.image} alt="" loading="lazy" className={cn("h-full w-full object-cover transition-transform duration-700 group-hover:scale-110", i.sold_out && "grayscale")} />
+                  : <div className="flex h-full items-center justify-center text-white/20"><UtensilsCrossed className="h-12 w-12" /></div>}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#15120f] via-transparent to-transparent" />
+                <span className="glass absolute left-3 top-3 rounded-full border border-white/15 px-3.5 py-1.5 text-base font-bold text-white shadow-lg">{money(i.price, cur)}</span>
+                {i.sold_out && <span className="absolute inset-0 flex items-center justify-center bg-black/55">
+                  <span className="rounded-full border border-white/30 px-5 py-2 text-lg font-bold uppercase tracking-[0.25em] text-white">Sold out</span></span>}
+              </div>
+              <div className="flex flex-1 items-end gap-3 px-5 pb-5 pt-1">
+                <div className="min-w-0 flex-1">
+                  <div className="serif text-2xl font-semibold leading-tight">{i.item_name}</div>
+                  <div className="mt-1 line-clamp-1 text-sm text-white/45">{i.description || (i.modifiers.length ? "Make it your way" : "\u00a0")}</div>
+                </div>
+                {!i.sold_out && <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f5c46b] to-[#e59a3a] text-[#1a1208] shadow-[0_10px_25px_-10px_rgba(229,154,58,.8)] transition-transform group-hover:scale-110">
+                  <Plus className="h-6 w-6" strokeWidth={2.75} /></span>}
+              </div>
             </button>
           ))}
         </div>
       </main>
-      <aside className="flex w-96 shrink-0 flex-col bg-white dark:bg-neutral-900">
-        <div className="flex items-center gap-2 border-b border-neutral-200 p-4 text-2xl font-bold dark:border-white/10"><ShoppingBag className="h-7 w-7" /> Your order
-          <span className="ml-auto rounded-full bg-primary/10 px-3 py-1 text-base text-primary">{type === "Dine-in" ? "Eat in" : "Take away"}</span></div>
-        <div className="flex-1 divide-y divide-neutral-200 overflow-y-auto dark:divide-white/10">
-          {cart.length === 0 && <p className="p-8 text-center text-lg text-neutral-500">Tap a dish to add it</p>}
+      <aside className="flex w-96 shrink-0 flex-col border-l border-white/[0.06] bg-[#120f0c]">
+        <div className="flex items-center gap-3 px-5 pb-4 pt-6"><ShoppingBag className="h-6 w-6 text-[#f5c46b]" /><span className="serif text-3xl font-semibold">Your order</span>
+          {count > 0 && <span className="ml-auto rounded-full bg-[#f5c46b]/15 px-3 py-1 text-sm font-bold text-[#f5c46b]">{count} item{count === 1 ? "" : "s"}</span>}</div>
+        <div className="flex-1 divide-y divide-white/[0.06] overflow-y-auto">
+          {cart.length === 0 && <div className="flex flex-col items-center gap-3 px-8 py-16 text-center text-white/40"><UtensilsCrossed className="h-10 w-10" /><p className="text-lg">Tap a dish to add it</p></div>}
           {cart.map((l) => (
             <div key={l.key} className="p-4">
-              <div className="flex justify-between gap-2 text-lg font-semibold"><span>{l.item.item_name}</span><span>{money(linePrice(l) * l.qty, cur)}</span></div>
-              {l.modifiers.length > 0 && <div className="text-sm text-neutral-500">{l.modifiers.map((m) => m.name).join(", ")}</div>}
+              <div className="flex justify-between gap-2 text-lg font-semibold"><span>{l.item.item_name}</span><span className="tabular-nums">{money(linePrice(l) * l.qty, cur)}</span></div>
+              {l.modifiers.length > 0 && <div className="text-sm text-white/45">{l.modifiers.map((m) => m.name).join(", ")}</div>}
               <div className="mt-2 flex items-center gap-2">
-                <button onClick={() => setCart((c) => c.map((x) => x.key === l.key ? { ...x, qty: Math.max(1, x.qty - 1) } : x))} className="rounded-xl border border-neutral-300 p-3 dark:border-white/20"><Minus className="h-5 w-5" /></button>
+                <button onClick={() => setCart((c) => c.map((x) => x.key === l.key ? { ...x, qty: Math.max(1, x.qty - 1) } : x))} className="rounded-xl border border-white/15 p-3 hover:bg-white/5"><Minus className="h-5 w-5" /></button>
                 <span className="w-10 text-center text-xl font-bold">{l.qty}</span>
-                <button onClick={() => setCart((c) => c.map((x) => x.key === l.key ? { ...x, qty: x.qty + 1 } : x))} className="rounded-xl border border-neutral-300 p-3 dark:border-white/20"><Plus className="h-5 w-5" /></button>
-                <button onClick={() => setCart((c) => c.filter((x) => x.key !== l.key))} className="ml-auto p-3 text-red-500" aria-label="Remove"><Trash2 className="h-6 w-6" /></button>
+                <button onClick={() => setCart((c) => c.map((x) => x.key === l.key ? { ...x, qty: x.qty + 1 } : x))} className="rounded-xl border border-white/15 p-3 hover:bg-white/5"><Plus className="h-5 w-5" /></button>
+                <button onClick={() => setCart((c) => c.filter((x) => x.key !== l.key))} className="ml-auto p-3 text-red-400/80 hover:text-red-400" aria-label="Remove"><Trash2 className="h-6 w-6" /></button>
               </div>
             </div>
           ))}
         </div>
-        <div className="space-y-3 border-t border-neutral-200 p-4 dark:border-white/10">
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={30} placeholder="Your name (we'll call it out)" className="h-14 w-full rounded-2xl border border-neutral-300 bg-transparent px-4 text-lg dark:border-white/20" />
+        <div className="space-y-3 border-t border-white/[0.06] p-5">
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={30} placeholder="Your name (we'll call it out)" className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-lg placeholder:text-white/35 focus:border-[#f5c46b]/50 focus:outline-none" />
           {quote && <div className="space-y-1 text-lg">
-            {quote.discount > 0 && <div className="flex justify-between text-green-600"><span>Offer</span><span>−{money(quote.discount, cur)}</span></div>}
-            {quote.tax > 0 && <div className="flex justify-between text-neutral-500"><span>Tax</span><span>{money(quote.tax, cur)}</span></div>}
-            <div className="flex justify-between text-2xl font-black"><span>Total</span><span>{money(quote.total, cur)}</span></div>
+            {quote.discount > 0 && <div className="flex justify-between text-emerald-300"><span>Offer</span><span>−{money(quote.discount, cur)}</span></div>}
+            {quote.tax > 0 && <div className="flex justify-between text-white/50"><span>Tax</span><span>{money(quote.tax, cur)}</span></div>}
+            <div className="flex items-baseline justify-between pt-1"><span className="text-xl font-semibold">Total</span><span className="serif gold-grad text-4xl font-semibold tabular-nums">{money(quote.total, cur)}</span></div>
           </div>}
-          <button disabled={!count || busy} onClick={() => void order()} className="h-16 w-full rounded-2xl bg-primary text-2xl font-black text-primary-foreground disabled:opacity-40">
+          <button disabled={!count || busy} onClick={() => void order()} className="h-16 w-full rounded-2xl bg-gradient-to-r from-[#f5c46b] to-[#e59a3a] text-2xl font-bold text-[#1a1208] shadow-[0_15px_35px_-15px_rgba(229,154,58,.8)] transition active:scale-[0.98] disabled:opacity-40 disabled:shadow-none">
             {busy ? "Sending…" : `Order · pay at counter`}</button>
         </div>
       </aside>
