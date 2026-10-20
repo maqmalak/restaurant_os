@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import {
   Award, Banknote, CalendarClock, ChevronDown, CreditCard, Gift, History, Keyboard, LayoutDashboard, LayoutGrid, List, LogOut, MessageSquare,
   Minus, PauseCircle, Percent, Phone, Plus, Printer, ScanBarcode, ShoppingBag, Store, Tag, Ticket, Trash2, User,
-  UserPlus, Wallet, X, ReceiptText, PackagePlus, MonitorDown, Bell, BellRing, CheckCheck, AlertTriangle, PackageX, PackageMinus, Eye, Undo2, Lock, Clock, CheckCircle2, Search, Landmark, Smartphone, SplitSquareHorizontal, CloudOff, Wifi, RefreshCw, HandCoins, FileText, Calculator,
+  UserPlus, Wallet, X, ReceiptText, PackagePlus, MonitorDown, Bell, BellRing, CheckCheck, AlertTriangle, PackageX, PackageMinus, Eye, Undo2, Lock, Clock, CheckCircle2, Search, Landmark, Smartphone, SplitSquareHorizontal, CloudOff, Wifi, RefreshCw, HandCoins, FileText, Calculator, MonitorSmartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -25,6 +25,7 @@ import {
 } from "./pos-offline";
 import { desktop, loadPrinter, printHtml, printReceipt, PrinterSettingsDialog, receiptHtml, ReceiptPreview, shiftReportHtml, type ShiftReport } from "./pos-receipt";
 import { ApprovalCancelled, useManagerApproval } from "@/components/pos/manager-approval";
+import { openCustomerDisplay, publishDisplay, publishIdle } from "./customer-display-channel";
 import { InvoicesDialog, printUrl, ReceiveDuesDialog, SyncDialog } from "./pos-panels";
 
 interface Profile {
@@ -84,7 +85,7 @@ const portionLabel = (l: Line) => (l.portion === "rs" ? (l.rs ? `Rs ${l.rs}` : "
 interface PreviewRow { item_code: string; item_name: string; qty: number; uom: string; rate: number; amount: number; price_list_rate: number; discount_percentage: number; pricing_rules?: string; is_free_item?: number }
 interface Preview {
   net_total: number; total: number; discount_amount: number; total_taxes_and_charges: number; grand_total: number; rounded_total: number;
-  additional_discount_percentage: number; items: PreviewRow[]; taxes: { description: string; tax_amount: number }[];
+  additional_discount_percentage: number; items: PreviewRow[]; taxes: { description: string; tax_amount: number }[]; offers?: string[];
 }
 interface ItemOptions { item_code: string; stock_uom: string; has_batch_no: number; has_serial_no: number; uoms: { uom: string; conversion_factor: number }[];
   batches: { batch_no: string; qty: number; expiry_date?: string }[]; serials: string[]; actual_qty: number }
@@ -233,6 +234,21 @@ export default function POSTerminalPage() {
     return () => clearTimeout(t);
   }, [payload, profile, lines, offline, discount, billMode, bundle]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // customer-facing display: mirror the cart (the payment dialog takes over while it is open)
+  useEffect(() => {
+    if (pay) return;
+    if (!lines.length) { publishIdle(profile?.name); return; }
+    if (!preview) return;
+    publishDisplay({
+      kind: "cart", counter: profile?.name, currency: profile?.currency ?? "PKR",
+      customer: customer && customer !== profile?.customer ? cust?.customer_name ?? customer : undefined,
+      lines: preview.items.map((r) => ({ name: r.item_name, qty: r.qty, uom: r.uom, rate: r.rate, amount: r.amount, list: r.price_list_rate, free: !!r.is_free_item })),
+      totals: { subtotal: preview.total, discount: preview.discount_amount, taxes: preview.taxes.map((t) => ({ description: t.description, amount: t.tax_amount })),
+        total: preview.rounded_total || preview.grand_total },
+      offers: preview.offers,
+    });
+  }, [preview, lines.length, pay, customer, cust?.customer_name, profile?.name, profile?.currency, profile?.customer]);
+
   const hold = useCallback(async () => {
     if (offline) { toast.error("Holding a sale needs the server — finish it or wait for the connection."); return; }
     try {
@@ -341,6 +357,7 @@ export default function POSTerminalPage() {
           }} />
           <SyncBadge sync={sync} onClick={() => setPanel("sync")} />
           <ToolBtn icon={Printer} label="Printer" tone="slate" iconOnly onClick={() => setPanel("printer")} />
+          <ToolBtn icon={MonitorSmartphone} label="Customer display" tone="slate" iconOnly onClick={() => { void openCustomerDisplay().then((ok) => { if (!ok) toast.error("Allow pop-ups for this site to open the customer display."); }); }} />
           <ToolBtn icon={Keyboard} label="Shortcuts" tone="slate" iconOnly onClick={() => setPanel("keys")} />
           <ToolBtn icon={LogOut} label="Close shift" tone="rose" disabled={offline} onClick={() => setPanel("close")} />
           <CashierMenu cashier={ctx.cashier} counter={profile?.name} offline={offline} onPanel={(p) => setPanel(p)} onLock={() => setLocked(true)} onShift={() => setPanel("shift")} />
@@ -1269,6 +1286,18 @@ function PayDialog({ profile, total, payload, draft, money, customer, isWalkIn, 
   const short = Math.round((due - paid) * 100) / 100;
   const change = Math.max(0, paid - due);
   const canWriteOff = short > 0 && short <= (profile.write_off_limit ?? 0);
+  // customer-facing display: amount to pay / paid / change while paying, then thank-you (with the FBR QR once the receipt is in)
+  useEffect(() => {
+    if (done) return;
+    publishDisplay({ kind: "pay", counter: profile.name, currency: profile.currency ?? "PKR", customer: isWalkIn ? undefined : customerName,
+      total, points, due, paid, change });
+  }, [done, total, points, due, paid, change, isWalkIn, customerName, profile.name, profile.currency]);
+  useEffect(() => {
+    if (!done) return;
+    publishDisplay({ kind: "done", counter: profile.name, currency: profile.currency ?? "PKR", customer: isWalkIn ? undefined : customerName,
+      invoice: done.name, total: due, paid: receipt?.paid_amount ?? paid, change: done.change_amount ?? change,
+      fbr: receipt?.fbr_invoice_number, qr: receipt?.qr_value, offline: !!receipt?.pending_sync });
+  }, [done, receipt]); // eslint-disable-line react-hooks/exhaustive-deps
   const canCredit = !!profile.allow_partial_payment && !isWalkIn;
   const printer = loadPrinter();
   const whole = (v?: number) => formatMoney(Math.round(v ?? 0), profile.currency ?? "PKR", { decimals: 0 });   // the counter counts whole rupees

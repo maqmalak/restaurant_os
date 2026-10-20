@@ -15,10 +15,11 @@
 | 7b | Stock deduction | **Background job** on order completion (BOM recipe → Stock Entry from the branch kitchen); on a bench without a worker it runs immediately |
 | 10 | Invoice mode | **POS Invoice** (merged into Sales Invoices when the shift closes); switchable in Restaurant Settings |
 | 11 | Repository | Push `apps/restaurant_os` over github.com/maqmalak/restaurant (the old setup app kept on branch `legacy-restaurant-setup`) |
+| 12 | Docker | **Not required** (owner, 2026-10-21): local dev on the shared bench (`setup_restaurant.sh`), production with `bench setup production` (docs/SETUP.md). The brief's Docker Compose deliverable is dropped |
 
 ## Still open
 
-- **Receipt printer / KDS hardware** models (browser printing on 80 mm thermal assumed).
+- **Receipt printer / KDS hardware** models (browser printing on 80 mm thermal assumed). Customer display: any second monitor on the counter PC (`/ros/display`); a pole display on a separate device would need the realtime channel instead.
 - **FBR**: POS ID, access token and the exact PostData / IMS URL from PRAL; the PCT code to send for restaurant items.
 - **PRA** (Punjab Revenue Authority) — restaurant services in Punjab are usually under PRA rather than FBR; the same adapter can report to PRA if needed.
 - **Foodpanda** live API access and the product mapping (remote codes = item codes today).

@@ -11,6 +11,7 @@ export interface Menu {
   branches: { name: string; address?: string }[]; categories: string[]; items: MenuItem[]; open: number; kiosk_open: number; kiosk_idle_seconds: number;
   delivery_fee: number; min_order: number; tax: { rate: number; included: boolean };
   online_payment: number; payment_test_mode: boolean;
+  offers?: { title: string; description?: string }[];
 }
 export interface Chosen { group: string; name: string }
 export interface CartLine { key: string; item: MenuItem; qty: number; modifiers: Chosen[]; notes?: string }

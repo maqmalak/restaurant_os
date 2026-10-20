@@ -95,7 +95,15 @@ def menu(branch: str | None = None) -> dict:
 		"delivery_fee": flt(s.delivery_fee), "min_order": flt(s.min_order_amount),
 		"tax": {"rate": flt(tax), "included": s.tax_included_in_price == "Tax included in item price"},
 		"currency": frappe.get_cached_value("Company", company, "default_currency"),
+		"offers": _offer_titles(profile),
 	}
+
+
+def _offer_titles(profile):
+	"""Automatic POS Offers in force today (menu banners, the customer-facing display)."""
+	from restaurant_os.api.pos import _live_offers
+
+	return [{"title": o.title or o.name, "description": o.description} for o in _live_offers(frappe.get_cached_doc("POS Profile", profile))]
 
 
 # ------------------------------------------------------------------ cart → order lines

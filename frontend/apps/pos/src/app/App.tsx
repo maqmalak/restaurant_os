@@ -12,6 +12,7 @@ const RiderPage = lazy(() => import("@/pages/Delivery/RiderPage"));
 const TrackPage = lazy(() => import("@/pages/Delivery/TrackPage"));
 const OrderSitePage = lazy(() => import("@/pages/Online/OrderSitePage"));
 const KioskPage = lazy(() => import("@/pages/Online/KioskPage"));
+const CustomerDisplayPage = lazy(() => import("@/pages/POS/CustomerDisplayPage"));
 const PayPage = lazy(() => import("@/pages/Online/PayPage"));
 const DispatchPage = lazy(() => import("@/pages/Delivery/DispatchPage"));
 const RestaurantRoutes = lazy(() => import("@/pages/Restaurant/RestaurantRoutes").then((m) => ({ default: m.RestaurantRoutes })));
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/track/:key" element={<Suspense fallback={<FullPageLoader />}><TrackPage /></Suspense>} />
         <Route path="/order" element={<Suspense fallback={<FullPageLoader />}><OrderSitePage /></Suspense>} />
         <Route path="/kiosk" element={<Suspense fallback={<FullPageLoader />}><KioskPage /></Suspense>} />
+        <Route path="/display" element={<Suspense fallback={<FullPageLoader />}><CustomerDisplayPage /></Suspense>} />
         <Route path="/pay/:session" element={<Suspense fallback={<FullPageLoader />}><PayPage /></Suspense>} />
         <Route path="/rider" element={<RequireAuth><Suspense fallback={<FullPageLoader />}><RiderPage /></Suspense></RequireAuth>} />
         {/* full-screen kitchen display (no sidebar) */}

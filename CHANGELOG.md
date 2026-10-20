@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-21 — Customer-facing display
+
+- New screen at `/ros/display` for a second monitor turned to the customer. Open it with the **Customer display** button
+  in the POS terminal toolbar. In Chrome it opens on the other screen; double-click it to go full screen.
+- It mirrors the terminal on the same PC live, with no server round trip and offline too (BroadcastChannel):
+  - **Cart:** each line as it is rung up (newest highlighted), free offer items, struck-through list prices, discount,
+    tax, FBR fee and the total
+  - **Payment:** the amount to pay, the amount paid, and the change or the amount remaining
+  - **Done:** thank-you, the change due, and the FBR QR code once the receipt is in; back to the menu after 15 s
+- Between customers it shows rotating dish photos with prices, and today's offers (`api.online.menu` now returns the
+  live automatic POS Offers).
+- Owner decision recorded: Docker is not required (OPEN_QUESTIONS #12).
+
 ## 2026-10-21 — Phase 11: hardening
 
 - **Security review** (docs/HARDENING.md): all 94 whitelisted methods checked. The 37 counter methods now require the
