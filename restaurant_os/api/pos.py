@@ -1596,3 +1596,12 @@ def dashboard(company: str, from_date: str | None = None, to_date: str | None = 
 		"closings": closings,
 		"today": {"count": periods[0]["count"], "amount": periods[0]["net"]}, "month": {"count": periods[4]["count"], "amount": periods[4]["net"]},
 	}
+
+
+@frappe.whitelist()
+def default_company() -> dict:
+	"""The app shell's default company for any signed-in user (Global Defaults is readable only by System Managers)."""
+	if frappe.session.user == "Guest":
+		frappe.throw(_("Please sign in."), frappe.PermissionError)
+	return {"default_company": frappe.defaults.get_user_default("Company")
+			or frappe.db.get_single_value("Global Defaults", "default_company")}

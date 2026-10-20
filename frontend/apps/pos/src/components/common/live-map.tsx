@@ -66,5 +66,6 @@ export function LiveMap({ markers, lines = [], className, fitKey, onMapClick }: 
     }
   }, [markers, lines, fitKey]);
 
-  return <div ref={host} className={className} style={{ minHeight: 240 }} />;
+  // isolation: Leaflet's panes use z-index 400–1000; keep them inside the map so dialogs and menus stay on top
+  return <div ref={host} className={className} style={{ minHeight: 240, isolation: "isolate", zIndex: 0 }} />;
 }

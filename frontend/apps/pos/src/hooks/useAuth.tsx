@@ -71,13 +71,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [rolesData]);
 
   // Default company from ERPNext Global Defaults / user defaults.
+  // (read server-side: Global Defaults itself is readable only by System Managers)
   const { data: defaults } = useFrappeGetCall<{ default_company?: string }>(
-    "frappe.client.get_value",
-    {
-      doctype: "Global Defaults",
-      fieldname: JSON.stringify(["default_company"]),
-      filters: JSON.stringify({}),
-    },
+    "restaurant_os.api.pos.default_company",
+    undefined,
     isAuthenticated ? "micromax.defaults.company" : null,
   );
 
@@ -162,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     currentUser,
     user: userDoc as FrappeUser | undefined,
     roles,
-    defaultCompany: (defaults as any)?.default_company,
+    defaultCompany: (defaults as any)?.message?.default_company ?? (defaults as any)?.default_company,
     isLoading: authLoading || (isAuthenticated && userLoading),
     isAuthenticated,
     error,
