@@ -72,7 +72,7 @@ def board(branch: str | None = None, station: str | None = None, past: int = 0) 
 			for it in c["items"]:
 				if it["status"] in ("Queued", "Preparing"):
 					all_day[it["item_name"]] = all_day.get(it["item_name"], 0) + it["qty"]
-	riders = frappe.get_all("Rider", {"branch": branch, "disabled": 0, "status": ["!=", "Off Duty"]}, ["name", "rider_name", "status"], order_by="rider_name")
+	riders = frappe.get_all("Rider", {"branch": branch, "disabled": 0}, ["name", "rider_name", "status"], order_by="rider_name")
 	for r in riders:
 		r.active = frappe.db.count("Delivery Assignment", {"rider": r.name, "status": ["in", ["Accepted", "Picked Up"]]})
 	return {
@@ -185,9 +185,9 @@ def ticket(order: str) -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def assign_rider(order: str, rider: str) -> dict:
+def assign_rider(order: str, rider: str, check_in: int = 0) -> dict:
 	"""Assign / reassign a delivery to a rider from the KDS card (same as the dispatch map)."""
 	_check()
 	from restaurant_os.api.riders import assign
 
-	return assign(order, rider)
+	return assign(order, rider, check_in)

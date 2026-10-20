@@ -131,8 +131,9 @@ def dispatch(branch: str | None = None) -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def assign(order: str, rider: str) -> dict:
-	"""Manual dispatch: the order goes straight to this rider (accepted on their behalf)."""
+def assign(order: str, rider: str, check_in: int = 0) -> dict:
+	"""Manual dispatch: the order goes straight to this rider (accepted on their behalf). `check_in` first puts an
+	off-duty rider on duty (HR check-in recorded by the staff member — e.g. the rider is at the counter)."""
 	_staff()
 	o = frappe.get_doc("Restaurant Order", order)
 	if o.delivery_by != "Own Rider":
@@ -144,6 +145,8 @@ def assign(order: str, rider: str) -> dict:
 		old.db_set("status", "Cancelled")
 		if not frappe.db.count("Delivery Assignment", {"rider": old.rider, "status": ["in", ["Accepted", "Picked Up"]]}):
 			frappe.db.set_value("Rider", old.rider, "status", "Available")
+	if cint(check_in) and frappe.db.get_value("Rider", rider, "status") == "Off Duty":
+		svc.set_duty(frappe.get_doc("Rider", rider), 1)
 	if frappe.db.get_value("Rider", rider, "status") == "Off Duty":
 		frappe.throw(_("{0} is off duty.").format(frappe.db.get_value("Rider", rider, "rider_name")))
 	return {"assignment": svc.offer(o, rider, status="Accepted")}

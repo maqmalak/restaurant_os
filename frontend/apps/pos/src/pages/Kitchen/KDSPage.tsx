@@ -177,7 +177,7 @@ export default function KDSPage() {
                   {cards.length === 0 && <p className="pt-10 text-center text-sm text-neutral-400">No orders</p>}
                   {cards.map((c) => (
                     <TicketCard key={c.name} card={c} now={serverNow} amber={amber} red={red} busy={busy} riders={board?.riders ?? []}
-                      onAssign={(rider) => void act(c.name, "assign_rider", { order: c.name, rider })}
+                      onAssign={(rider, checkIn) => void act(c.name, "assign_rider", { order: c.name, rider, check_in: checkIn ? 1 : 0 })}
                       onAdvance={() => void act(c.name, "advance", { order: c.name, station: station || undefined })}
                       onBump={(row) => void act(row, "bump_item", { order: c.name, row })}
                       onRecall={() => void act(c.name, "recall", { order: c.name })} />
@@ -215,11 +215,36 @@ export default function KDSPage() {
   );
 }
 
+/** Riders of the branch: on-duty ones assign straight away; off-duty ones are checked in (HR check-in) and assigned. */
+function RiderList({ card: c, riders, onPick }: { card: Card; riders: RiderOpt[]; onPick: (rider: string, checkIn: boolean) => void }) {
+  const on = riders.filter((r) => r.status !== "Off Duty");
+  const off = riders.filter((r) => r.status === "Off Duty");
+  const row = (r: RiderOpt, checkIn: boolean) => (
+    <button key={r.name} disabled={r.name === c.rider} onClick={() => onPick(r.name, checkIn)}
+      className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-neutral-100 disabled:opacity-50 dark:hover:bg-white/10">
+      <Bike className={cn("h-4 w-4", checkIn && "text-neutral-400")} /><span className="flex-1 truncate">{r.rider_name}</span>
+      <span className="text-[10px] text-neutral-500">{checkIn ? "check in & assign" : r.name === c.rider ? "assigned" : r.active ? `${r.active} active` : "free"}</span>
+    </button>
+  );
+  return (
+    <div className="py-1">
+      <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-neutral-500">{c.rider ? "Reassign rider" : "Assign rider"}</div>
+      {on.map((r) => row(r, false))}
+      {on.length === 0 && <div className="px-3 py-1 text-xs text-neutral-500">No rider on duty</div>}
+      {off.length > 0 && <div className="mt-1 border-t border-neutral-200 px-3 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-wide text-neutral-500 dark:border-white/10">Off duty</div>}
+      {off.map((r) => row(r, true))}
+      {riders.length === 0 && <div className="px-3 py-1.5 text-xs text-neutral-500">No riders set up for this branch</div>}
+    </div>
+  );
+}
+
 function TicketCard({ card: c, now, amber, red, busy, riders, onAssign, onAdvance, onBump, onRecall }: {
-  card: Card; now: number; amber: number; red: number; busy: string | null; riders: RiderOpt[]; onAssign: (rider: string) => void;
+  card: Card; now: number; amber: number; red: number; busy: string | null; riders: RiderOpt[]; onAssign: (rider: string, checkIn?: boolean) => void;
   onAdvance: () => void; onBump: (row: string) => void; onRecall: () => void;
 }) {
   const [menu, setMenu] = useState(false);
+  const [pick, setPick] = useState(false);
+  const canAssign = c.order_type === "Delivery" && c.delivery_by === "Own Rider" && !["Picked Up", "Out for Delivery", "Delivered"].includes(c.status);
   const style = TYPE_STYLE[c.order_type] ?? TYPE_STYLE.Takeaway;
   const created = parse(c.created).getTime();
   const updated = parse(c.updated).getTime();
@@ -264,18 +289,7 @@ function TicketCard({ card: c, now, amber, red, busy, riders, onAssign, onAdvanc
             {c.column !== "Placed" && <button onClick={() => { setMenu(false); onRecall(); }} className="flex w-full items-center gap-2 px-3 py-2 hover:bg-neutral-100 dark:hover:bg-white/10"><RotateCcw className="h-4 w-4" /> Recall</button>}
             <button onClick={() => { setMenu(false); printHtml(ticketHtml(c)); }} className="flex w-full items-center gap-2 px-3 py-2 hover:bg-neutral-100 dark:hover:bg-white/10"><Printer className="h-4 w-4" /> Print ticket</button>
             <a href={`/desk/restaurant-order/${encodeURIComponent(c.name)}`} target="_blank" rel="noopener" className="flex w-full items-center gap-2 px-3 py-2 hover:bg-neutral-100 dark:hover:bg-white/10"><ListOrdered className="h-4 w-4" /> Open order</a>
-            {c.order_type === "Delivery" && c.delivery_by === "Own Rider" && !["Picked Up", "Out for Delivery", "Delivered"].includes(c.status) && (
-              <div className="border-t border-neutral-200 py-1 dark:border-white/10">
-                <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-neutral-500">{c.rider ? "Reassign rider" : "Assign rider"}</div>
-                {riders.length === 0 && <div className="px-3 py-1.5 text-xs text-neutral-500">No rider on duty</div>}
-                {riders.map((r) => (
-                  <button key={r.name} disabled={r.name === c.rider} onClick={() => { setMenu(false); onAssign(r.name); }}
-                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-neutral-100 disabled:opacity-50 dark:hover:bg-white/10">
-                    <Bike className="h-4 w-4" /><span className="flex-1 truncate">{r.rider_name}</span><span className="text-[10px] text-neutral-500">{r.active ? `${r.active} active` : "free"}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+            {canAssign && <div className="border-t border-neutral-200 dark:border-white/10"><RiderList card={c} riders={riders} onPick={(r, ci) => { setMenu(false); onAssign(r, ci); }} /></div>}
           </div>
         )}
       </div>
@@ -302,9 +316,18 @@ function TicketCard({ card: c, now, amber, red, busy, riders, onAssign, onAdvanc
       </div>
       {c.notes && <div className="mx-3 mb-2 rounded-md bg-red-50 px-2 py-1.5 text-xs font-semibold text-red-700 dark:bg-red-500/15 dark:text-red-300">{c.notes}</div>}
       {c.order_type === "Delivery" && (
-        <div className="mx-3 mb-2 flex items-center gap-1.5 text-[11px] text-neutral-500">
-          <Bike className="h-3.5 w-3.5" />{c.rider_name ? c.rider_name : c.delivery_by === "Foodpanda Rider" ? "Foodpanda rider" : "Waiting for a rider"}
+        <div className="relative mx-3 mb-2 flex items-center gap-1.5 text-[11px] text-neutral-500">
+          {canAssign ? (
+            <button onClick={() => setPick((v) => !v)} className={cn("inline-flex items-center gap-1.5 rounded-md px-2 py-1 font-semibold",
+              c.rider ? "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-white/10 dark:text-neutral-200" : "bg-sky-600 text-white hover:bg-sky-500")}>
+              <Bike className="h-3.5 w-3.5" />{c.rider_name ? `${c.rider_name} · change` : "Assign rider"}</button>
+          ) : <><Bike className="h-3.5 w-3.5" />{c.rider_name ? c.rider_name : c.delivery_by === "Foodpanda Rider" ? "Foodpanda rider" : "Waiting for a rider"}</>}
           {c.invoice && <span className="ml-auto">{c.invoice}</span>}
+          {pick && canAssign && (
+            <div className="absolute bottom-8 left-0 z-10 w-56 overflow-hidden rounded-lg bg-white text-sm text-neutral-900 shadow-xl ring-1 ring-black/10 dark:bg-neutral-800 dark:text-neutral-100" onMouseLeave={() => setPick(false)}>
+              <RiderList card={c} riders={riders} onPick={(r, ci) => { setPick(false); onAssign(r, ci); }} />
+            </div>
+          )}
         </div>
       )}
       <div className={cn("flex items-center gap-2 px-3 py-2", dispatch ? "bg-sky-700 text-white hover:bg-sky-600" : FOOT[c.column])}>

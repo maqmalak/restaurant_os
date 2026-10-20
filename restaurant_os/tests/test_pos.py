@@ -480,6 +480,30 @@ class TestRestaurantPOS(IntegrationTestCase):
 		card = next(c for c in kds.board()["cards"] if c["name"] == o["order"])
 		self.assertEqual(card["rider"], rider.name)
 
+	def test_kds_check_in_and_assign_off_duty_rider(self):
+		frappe.db.savepoint("kds_check_in")                 # rider duty states are shared by later tests: undo ours
+		try:
+			self._check_in_and_assign()
+		finally:
+			frappe.db.rollback(save_point="kds_check_in")
+
+	def _check_in_and_assign(self):
+		riders = frappe.get_all("Rider", {"branch": masters.BRANCH, "disabled": 0}, ["name", "user", "employee"])
+		from restaurant_os.api import riders as api
+
+		o = api.simulate_delivery_order()
+		for r in riders:                                     # everyone off duty
+			if frappe.db.get_value("Rider", r.name, "status") != "Off Duty" and not frappe.db.count("Delivery Assignment", {"rider": r.name, "status": ["in", ["Accepted", "Picked Up"]]}):
+				self._as(r.user, api.set_duty, 0)
+		off = next(r for r in riders if frappe.db.get_value("Rider", r.name, "status") == "Off Duty")
+		self.assertIn(off.name, [r.name for r in kds.board()["riders"]], "off-duty riders are listed on the KDS")
+		with self.assertRaises(frappe.ValidationError):
+			kds.assign_rider(o["order"], off.name)
+		kds.assign_rider(o["order"], off.name, check_in=1)
+		self.assertNotEqual(frappe.db.get_value("Rider", off.name, "status"), "Off Duty")
+		self.assertEqual(frappe.db.get_value("Restaurant Order", o["order"], "rider"), off.name)
+		self.assertTrue(frappe.db.exists("Employee Checkin", {"employee": off.employee, "log_type": "IN"}))
+
 	# ---------------------------------------------------------------- phase 9: promotions, loyalty, reviews, campaigns
 	def _deliver(self, order):
 		while frappe.db.get_value("Restaurant Order", order, "status") not in ("Delivered", "Completed"):
