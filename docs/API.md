@@ -65,6 +65,11 @@ Rider app (signed-in rider): `me`, `set_duty(on)`, `accept(assignment)`, `reject
 Dispatch (staff): `dispatch(branch?)`, `assign(order, rider)`, `handover(rider, amount?)`, `new_delivery_order(data JSON)`,
 `simulate_delivery_order(branch?)`. Customer (guest, rate-limited): `track(key)`.
 
+## Owner analytics — `restaurant_os.api.analytics` (managers)
+
+`live(branch?)`, `sales(filters)`, `kitchen(filters)`, `menu_engineering(filters)`, `customers(filters)` — filters JSON:
+`from_date`, `to_date`, `branch`, `channel`, `group_by`. Same logic as the script reports (services/analytics.py).
+
 ## Realtime events
 
 `ros_kds` {event, order, branch, status} — any order change (KDS and table map refresh); `ros_tables` {table, branch};

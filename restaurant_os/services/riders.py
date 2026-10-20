@@ -131,9 +131,32 @@ def _assignment(name, rider):
 	return da
 
 
-def set_duty(rider, on):
+def hr_checkin(rider, log_type, lat=None, lng=None):
+	"""On / off duty is the rider's attendance: an HRMS Employee Checkin (IN / OUT) at the phone's position. HR Settings'
+	geolocation rules apply (e.g. within the shift location's radius) and can refuse it."""
+	if not rider.employee or not frappe.db.exists("DocType", "Employee Checkin"):
+		return None
+	from restaurant_os.session import as_system
+
+	with as_system():                                         # the rider app has no HR rights; the rider is checked already
+		doc = frappe.get_doc({"doctype": "Employee Checkin", "employee": rider.employee, "log_type": log_type, "time": now_datetime(),
+							  "device_id": "Restaurant OS rider app", "latitude": flt(lat) or None, "longitude": flt(lng) or None})
+		if lat and lng:
+			doc.geolocation = frappe.as_json({"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {},
+											  "geometry": {"type": "Point", "coordinates": [flt(lng), flt(lat)]}}]})
+		doc.insert(ignore_permissions=True)
+	return doc.name
+
+
+def set_duty(rider, on, lat=None, lng=None):
 	if not cint(on) and frappe.db.count("Delivery Assignment", {"rider": rider.name, "status": ["in", ["Accepted", "Picked Up"]]}):
 		frappe.throw(_("Finish your deliveries before going off duty."))
+	going_on = cint(on) and rider.status == "Off Duty"
+	going_off = not cint(on) and rider.status != "Off Duty"
+	if going_on or going_off:
+		hr_checkin(rider, "IN" if going_on else "OUT", lat, lng)
+	if lat and lng:
+		rider.db_set({"latitude": flt(lat), "longitude": flt(lng)})
 	rider.db_set({"status": ("On Delivery" if _active_count(rider.name) else "Available") if cint(on) else "Off Duty", "last_seen": now_datetime()})
 	frappe.publish_realtime("ros_dispatch", {"event": "duty", "rider": rider.name, "branch": rider.branch}, after_commit=True)
 	if cint(on):                                              # anything waiting for a rider?

@@ -57,8 +57,9 @@ def me() -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def set_duty(on: int) -> dict:
-	svc.set_duty(svc.my_rider(), on)
+def set_duty(on: int, lat: float | None = None, lng: float | None = None) -> dict:
+	"""On / off duty = HR check-in / check-out (Employee Checkin) at the phone's position."""
+	svc.set_duty(svc.my_rider(), on, lat, lng)
 	return me()
 
 
@@ -102,8 +103,10 @@ def dispatch(branch: str | None = None) -> dict:
 	branch = branch or svc.settings().default_branch
 	blat, blng = svc.branch_point(branch)
 	riders = frappe.get_all("Rider", {"branch": branch, "disabled": 0},
-							["name", "rider_name", "phone", "vehicle", "status", "latitude", "longitude", "last_seen", "cash_in_hand"], order_by="rider_name")
+							["name", "rider_name", "phone", "vehicle", "status", "latitude", "longitude", "last_seen", "cash_in_hand", "employee"], order_by="rider_name")
 	for r in riders:
+		last_in = frappe.db.get_value("Employee Checkin", {"employee": r.employee, "log_type": "IN"}, "time", order_by="time desc") if r.employee else None
+		r.checked_in_at = str(last_in) if last_in and r.status != "Off Duty" else None
 		r.active = frappe.db.count("Delivery Assignment", {"rider": r.name, "status": ["in", ["Accepted", "Picked Up"]]})
 		r.seen_seconds = int(time_diff_in_seconds(now_datetime(), r.last_seen)) if r.last_seen else None
 	orders = frappe.get_all("Restaurant Order", {"branch": branch, "order_type": "Delivery",

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-21 — Phase 10: owner dashboard & analytics (+ rider check-in, Connections)
+
+- **Owner dashboard** `/ros/restaurant/dashboard` (live): net sales / orders / avg ticket vs yesterday, food cost %, open and
+  late orders, ticket time, tables, wastage, alerts (FBR / stock failures, late kitchen, deliveries without a rider), sales by
+  hour (today vs yesterday), channel mix, top dishes, kitchen load per station, riders & deliveries, open orders, low stock /
+  sold out.
+- **Reports** `/ros/restaurant/reports` + desk script reports: **Restaurant Sales Analysis** (by channel, order type, branch,
+  item, category, hour, day part, weekday, date, cashier — net, food cost, margin), **Kitchen Performance** (wait / cook /
+  total per station, late dishes, ticket times by type, delivery times, rider performance), **Menu Engineering**
+  (Kasavana–Smith Star / Plowhorse / Puzzle / Dog, popularity × margin scatter), **Customer Insights** (new vs returning,
+  retention, lifetime value). CSV export everywhere; chart palette validated for colour-blind safety in light and dark.
+- **Rider check-in**: going on / off duty in the rider app records an HRMS Employee Checkin (IN / OUT) at the phone's position
+  (HR Settings' geolocation rules apply); dispatch shows "in since".
+- **Connections tab** now filled for every screen: dashboards for the restaurant doctypes and overrides for POS Invoice,
+  Sales Invoice, POS Opening / Closing Shift, POS Profile, POS Offer / Coupon, POS Cash Movement, Customer, Item, Employee.
+- Tests: 22 backend + Vitest passing.
+
 ## 2026-10-21 — Phase 7: delivery riders & tracking (own riders + Foodpanda)
 
 - **Foodpanda orders invoiced when delivered** (owner's choice), like own deliveries.

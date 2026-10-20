@@ -345,3 +345,37 @@ class TestRestaurantPOS(IntegrationTestCase):
 		t = api.track(doc.tracking_key)
 		self.assertEqual(t["rider"]["by"], "Foodpanda Rider")
 		self.assertIsNotNone(t["rider"]["lat"])
+
+	def test_rider_duty_is_hr_checkin(self):
+		from restaurant_os.api import riders as api
+
+		rider = frappe.get_all("Rider", {"branch": masters.BRANCH}, ["name", "user", "employee"], limit=1)[0]
+		frappe.db.set_value("Rider", rider.name, "status", "Off Duty")
+		self._as(rider.user, api.set_duty, 1, 31.52, 74.36)
+		ci = frappe.get_all("Employee Checkin", {"employee": rider.employee}, ["log_type", "latitude", "device_id"], order_by="creation desc", limit=1)[0]
+		self.assertEqual((ci.log_type, flt(ci.latitude)), ("IN", 31.52))
+		self._as(rider.user, api.set_duty, 0)
+		self.assertEqual(frappe.get_all("Employee Checkin", {"employee": rider.employee}, pluck="log_type", order_by="creation desc", limit=1)[0], "OUT")
+
+	# ---------------------------------------------------------------- owner analytics
+	def test_owner_analytics(self):
+		from restaurant_os.api import analytics
+
+		r, _total = self.pay([("Chicken Tikka", 2), ("Coke 345ml", 1)])
+		order = frappe.db.get_value("Restaurant Order", {"invoice": r["name"]}, "name")
+		while frappe.db.get_value("Restaurant Order", order, "status") not in ("Completed",):
+			kds.advance(order)
+		live = analytics.live()
+		self.assertGreater(live["today"]["net"], 0)
+		self.assertEqual(len(live["hours"]), 24)
+		by_channel = analytics.sales(json.dumps({"group_by": "Channel"}))
+		self.assertTrue(any(row["group"] == "POS" and row["net_sales"] >= 1450 for row in by_channel))
+		by_part = analytics.sales(json.dumps({"group_by": "Day Part"}))
+		self.assertTrue(all(row["group"] in ("Breakfast", "Lunch", "Evening", "Dinner", "Late Night") for row in by_part))
+		me = analytics.menu_engineering()
+		tikka = next(i for i in me["items"] if i.item_code == "Chicken Tikka")
+		self.assertIn(tikka["class"], ("Star", "Plowhorse", "Puzzle", "Dog"))
+		self.assertGreater(tikka.unit_cost, 0)
+		k = analytics.kitchen()
+		self.assertTrue(any(s.dishes > 0 for s in k["stations"]))
+		self.assertIn("retention_pct", analytics.customers())

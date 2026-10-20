@@ -42,3 +42,18 @@ doc_events = {
 override_whitelisted_methods = {
 	"erpnext.selling.page.point_of_sale.point_of_sale.get_items": "restaurant_os.services.availability.get_items",
 }
+
+# Connections for standard / POS Awesome doctypes (desk dashboards and the React Connections tab)
+override_doctype_dashboards = {
+	"POS Invoice": "restaurant_os.dashboards.pos_invoice",
+	"Sales Invoice": "restaurant_os.dashboards.sales_invoice",
+	"POS Opening Shift": "restaurant_os.dashboards.pos_opening_shift",
+	"POS Closing Shift": "restaurant_os.dashboards.pos_closing_shift",
+	"POS Profile": "restaurant_os.dashboards.pos_profile",
+	"POS Offer": "restaurant_os.dashboards.pos_offer",
+	"POS Coupon": "restaurant_os.dashboards.pos_coupon",
+	"POS Cash Movement": "restaurant_os.dashboards.pos_cash_movement",
+	"Customer": "restaurant_os.dashboards.customer",
+	"Item": "restaurant_os.dashboards.item",
+	"Employee": "restaurant_os.dashboards.employee",
+}

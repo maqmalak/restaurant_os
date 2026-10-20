@@ -42,6 +42,19 @@ export default function RiderPage() {
     return () => navigator.geolocation.clearWatch(id);
   }, [onDuty, me?.ping_seconds]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** One GPS fix for the HR check-in (8 s at most; check in without it when the phone can't tell). */
+  const here = () => new Promise<{ lat?: number; lng?: number }>((resolve) => {
+    if (!("geolocation" in navigator)) return resolve({});
+    navigator.geolocation.getCurrentPosition((p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }), () => resolve({}),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 });
+  });
+  const toggleDuty = async () => {
+    setBusy("duty");
+    const pos = await here();
+    setBusy("");
+    await act("duty", "set_duty", { on: onDuty ? 0 : 1, ...pos }, onDuty ? "Checked out — off duty" : "Checked in — on duty, waiting for orders");
+  };
+
   const act = async (key: string, method: string, args: Record<string, unknown>, ok?: string) => {
     setBusy(key);
     try { await postCall(`restaurant_os.api.riders.${method}`, args); if (ok) toast.success(ok); await mutate(); return true; }
@@ -63,7 +76,7 @@ export default function RiderPage() {
             <div className="truncate font-semibold">{me.rider.rider_name}</div>
             <div className="text-xs text-muted-foreground">{me.rider.vehicle} · {me.rider.branch} · GPS {gps === "on" ? "on" : gps === "denied" ? "blocked" : "off"}</div>
           </div>
-          <button disabled={busy === "duty"} onClick={() => void act("duty", "set_duty", { on: onDuty ? 0 : 1 }, onDuty ? "Off duty" : "On duty — waiting for orders")}
+          <button disabled={busy === "duty"} onClick={() => void toggleDuty()} title={onDuty ? "Check out (go off duty)" : "Check in (go on duty)"}
             className={cn("flex h-11 items-center gap-2 rounded-full px-4 text-sm font-bold text-white shadow", onDuty ? "bg-green-600" : "bg-neutral-500")}>
             <Power className="h-4 w-4" /> {onDuty ? (me.rider.status === "On Delivery" ? "On delivery" : "On duty") : "Off duty"}</button>
         </div>

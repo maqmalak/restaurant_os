@@ -10,7 +10,7 @@ import { formatMoney } from "@/utils/currency";
 import { cn } from "@/utils/cn";
 
 interface Rider { name: string; rider_name: string; phone?: string; vehicle: string; status: string; latitude?: number; longitude?: number;
-  cash_in_hand: number; active: number; seen_seconds?: number | null }
+  cash_in_hand: number; active: number; seen_seconds?: number | null; checked_in_at?: string | null }
 interface Order { name: string; order_no: string; status: string; channel: string; delivery_by: string; customer_name?: string; phone?: string;
   address?: string; lat?: number; lng?: number; rider?: string; rider_name?: string; ext_rider_status?: string; assignment_status?: string;
   offered_to?: string; cod_amount: number; distance_km: number; grand_total: number; invoice?: string; placed_at: string; eta: number;
@@ -84,7 +84,8 @@ export default function DispatchPage() {
               <div key={r.name} className="flex items-center gap-2 rounded-lg border border-border p-2 text-sm">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ background: RIDER_COLOR[r.status] }} />
                 <div className="min-w-0 flex-1"><div className="truncate font-medium">{r.rider_name}</div>
-                  <div className="text-xs text-muted-foreground">{r.status} · {r.vehicle} · seen {ago(r.seen_seconds)}</div></div>
+                  <div className="text-xs text-muted-foreground">{r.status} · {r.vehicle} · seen {ago(r.seen_seconds)}
+                    {r.checked_in_at && ` · in since ${new Date(r.checked_in_at.replace(" ", "T")).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}</div></div>
                 {r.phone && <a href={`tel:${r.phone}`} className="rounded p-1 hover:bg-muted"><Phone className="h-4 w-4" /></a>}
                 <button disabled={r.cash_in_hand <= 0} onClick={() => void run("handover", { rider: r.name }, `${formatMoney(r.cash_in_hand)} handed over`)}
                   className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-semibold disabled:opacity-40" title="Rider hands the cash over at the counter">

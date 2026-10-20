@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Armchair, Bike, Map, Scale, Trash2, Award, BadgePercent, ClipboardList, MonitorPlay, ReceiptText, Banknote, ChefHat, DoorClosed, DoorOpen, LayoutDashboard, LayoutGrid, PackagePlus, Settings2, ShoppingCart,
+  Armchair, BarChart3, Bike, Gauge, Map, Scale, Trash2, Award, BadgePercent, ClipboardList, MonitorPlay, ReceiptText, Banknote, ChefHat, DoorClosed, DoorOpen, LayoutDashboard, LayoutGrid, PackagePlus, Settings2, ShoppingCart,
   SlidersHorizontal, SlidersVertical, Store, Ticket, UtensilsCrossed, Wallet,
 } from "lucide-react";
 
@@ -19,6 +19,13 @@ export interface NavGroup {
 
 /** The POS app's sidebar: selling, then the POS Awesome shift / cash / offer documents, then setup. */
 export const POS_NAVIGATION: NavGroup[] = [
+  {
+    title: "Owner",
+    items: [
+      { label: "Owner Dashboard", to: "/restaurant/dashboard", icon: Gauge, roles: ["System Manager", "Sales Manager", "Accounts Manager"] },
+      { label: "Reports", to: "/restaurant/reports", icon: BarChart3, roles: ["System Manager", "Sales Manager", "Accounts Manager", "Stock Manager"] },
+    ],
+  },
   {
     title: "Point of Sale",
     items: [
@@ -78,6 +85,8 @@ const ROUTE_TITLES: Record<string, string> = {
   new: "New",
   restaurant: "Restaurant",
   orders: "Orders",
+  dashboard: "Owner Dashboard",
+  reports: "Reports",
   dispatch: "Dispatch & Riders",
   riders: "Riders",
   wastage: "Wastage",
