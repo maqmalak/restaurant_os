@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
  * BroadcastChannel is instant and works offline; the last state is also kept in localStorage so a display opened later
  * (or reloaded) shows the current sale straight away.
  */
-export interface DisplayLine { name: string; qty: number; uom?: string; rate: number; amount: number; list?: number; free?: boolean }
+export interface DisplayLine { code?: string; name: string; qty: number; uom?: string; rate: number; amount: number; list?: number; free?: boolean }
 export interface DisplayTotals { subtotal: number; discount: number; taxes: { description: string; amount: number }[]; total: number }
 export type DisplayState =
   | { kind: "idle"; counter?: string }

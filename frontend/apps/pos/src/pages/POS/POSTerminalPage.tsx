@@ -242,7 +242,7 @@ export default function POSTerminalPage() {
     publishDisplay({
       kind: "cart", counter: profile?.name, currency: profile?.currency ?? "PKR",
       customer: customer && customer !== profile?.customer ? cust?.customer_name ?? customer : undefined,
-      lines: preview.items.map((r) => ({ name: r.item_name, qty: r.qty, uom: r.uom, rate: r.rate, amount: r.amount, list: r.price_list_rate, free: !!r.is_free_item })),
+      lines: preview.items.map((r) => ({ code: r.item_code, name: r.item_name, qty: r.qty, uom: r.uom, rate: r.rate, amount: r.amount, list: r.price_list_rate, free: !!r.is_free_item })),
       totals: { subtotal: preview.total, discount: preview.discount_amount, taxes: preview.taxes.map((t) => ({ description: t.description, amount: t.tax_amount })),
         total: preview.rounded_total || preview.grand_total },
       offers: preview.offers,
