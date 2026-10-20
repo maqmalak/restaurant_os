@@ -135,6 +135,8 @@ function Checkout({ menu, cart, setCart, onClose }: { menu: NonNullable<ReturnTy
         branch: menu.branch.name, order_type: type, items, customer_name: f.name, phone: f.phone, address: f.address, notes: f.notes,
         lat: pin?.lat, lng: pin?.lng, client_order_uuid: uuid.current,
         source: window.matchMedia("(display-mode: standalone)").matches ? "app" : "web" }) });
+      // clear the saved cart right away: navigating unmounts this page before its save-to-storage effect would run
+      try { localStorage.removeItem(CART_KEY); } catch { /* private mode */ }
       setCart(() => []);
       navigate(`/track/${r.tracking_key}`);
     } catch (e) { toast.error(humanizeError(e)); } finally { setBusy(false); }
