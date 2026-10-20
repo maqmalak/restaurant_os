@@ -1,0 +1,25 @@
+{
+  "id": "/ros/pos/terminal",
+  "name": "Restaurant OS POS",
+  "short_name": "ROS POS",
+  "description": "Restaurant point of sale: take orders, payments and receipts, and close shifts, online or offline.",
+  "start_url": "/ros/pos/terminal",
+  "scope": "/ros/pos/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0b1220",
+  "theme_color": "#0d9488",
+  "categories": ["business", "food", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Terminal", "short_name": "Terminal", "url": "/ros/pos/terminal" },
+    { "name": "POS Dashboard", "short_name": "Dashboard", "url": "/ros/pos" },
+    { "name": "Cash in / out", "short_name": "Cash", "url": "/ros/pos/cash" },
+    { "name": "Receive stock", "short_name": "Stock", "url": "/ros/pos/stock" }
+  ]
+}

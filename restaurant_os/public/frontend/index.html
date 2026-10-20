@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en" class="dark" style="color-scheme: dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/assets/restaurant_os/frontend/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Restaurant OS · POS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      // Dark by default; light only when the cashier chose it (saved by the theme toggle). Runs before first paint.
+      try {
+        var m = localStorage.getItem("ros-theme");
+        var light = m === "light" || (m === "system" && !window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (light) {
+          document.documentElement.classList.remove("dark");
+          document.documentElement.style.colorScheme = "light";
+        }
+      } catch (e) {}
+    </script>
+    <!-- frappe-boot -->
+    <script type="module" crossorigin src="/assets/restaurant_os/frontend/assets/index-uGNcAuBL.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/restaurant_os/frontend/assets/vendor-react-NulDNQOh.js">
+    <link rel="modulepreload" crossorigin href="/assets/restaurant_os/frontend/assets/vendor-frappe-DFxqJRi9.js">
+    <link rel="modulepreload" crossorigin href="/assets/restaurant_os/frontend/assets/vendor-charts-C80H5wkQ.js">
+    <link rel="stylesheet" crossorigin href="/assets/restaurant_os/frontend/assets/index-BgXoDzTQ.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

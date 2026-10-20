@@ -1,0 +1,8 @@
+{
+  "name": "@ros/types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Restaurant OS shared TypeScript types (Frappe documents; restaurant types land here per phase).",
+  "exports": { "./frappe": "./src/frappe.ts" }
+}

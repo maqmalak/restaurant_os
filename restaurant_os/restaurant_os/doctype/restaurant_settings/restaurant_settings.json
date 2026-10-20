@@ -1,0 +1,436 @@
+{
+ "doctype": "DocType",
+ "name": "Restaurant Settings",
+ "module": "Restaurant OS",
+ "custom": 0,
+ "engine": "InnoDB",
+ "creation": "2026-10-20 12:00:00.000000",
+ "modified": "2026-10-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator",
+ "description": "Restaurant OS settings: sales tax, invoice mode, payment modes, stock, KDS, integrations.",
+ "istable": 0,
+ "issingle": 1,
+ "editable_grid": 0,
+ "field_order": [
+  "company",
+  "default_branch",
+  "column_break_a",
+  "invoice_mode",
+  "section_tax",
+  "apply_sales_tax",
+  "sales_tax_rate",
+  "column_break_tax",
+  "tax_included_in_price",
+  "sales_tax_template",
+  "section_fbr",
+  "fbr_enabled",
+  "fbr_mode",
+  "fbr_pos_id",
+  "fbr_service_fee",
+  "column_break_fbr",
+  "fbr_url",
+  "fbr_token",
+  "fbr_pct_code",
+  "fbr_block_on_failure",
+  "section_payments",
+  "payment_modes",
+  "section_stock",
+  "stock_deduction_moment",
+  "column_break_stock",
+  "run_jobs_inline",
+  "section_kds",
+  "kds_amber_minutes",
+  "kds_sound",
+  "column_break_b",
+  "kds_red_minutes",
+  "kds_default_order_type",
+  "section_delivery",
+  "rider_assignment",
+  "rider_ping_seconds",
+  "column_break_c",
+  "review_delay_minutes",
+  "low_rating_alert",
+  "section_foodpanda",
+  "aggregator_mode",
+  "foodpanda_base_url",
+  "foodpanda_chain_code",
+  "column_break_fp",
+  "foodpanda_client_id",
+  "foodpanda_client_secret",
+  "foodpanda_webhook_secret",
+  "section_whatsapp",
+  "messaging_mode",
+  "whatsapp_provider",
+  "column_break_wa",
+  "whatsapp_phone_number_id",
+  "whatsapp_token"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "default_branch",
+   "fieldtype": "Link",
+   "label": "Main Branch",
+   "options": "Restaurant Branch",
+   "description": "New counters and the dashboard default to it"
+  },
+  {
+   "fieldname": "column_break_a",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "invoice_mode",
+   "fieldtype": "Select",
+   "label": "Counter Sales Posted As",
+   "options": "POS Invoice\nSales Invoice",
+   "default": "POS Invoice",
+   "description": "POS Invoice: merged into Sales Invoices when the shift closes (POS Awesome). Sales Invoice: posted per sale."
+  },
+  {
+   "fieldname": "section_tax",
+   "fieldtype": "Section Break",
+   "label": "Sales Tax"
+  },
+  {
+   "fieldname": "apply_sales_tax",
+   "fieldtype": "Check",
+   "label": "Apply Sales Tax",
+   "default": "1",
+   "description": "Untick to sell without sales tax on every counter"
+  },
+  {
+   "fieldname": "sales_tax_rate",
+   "fieldtype": "Percent",
+   "label": "Sales Tax Rate",
+   "default": "18",
+   "depends_on": "apply_sales_tax"
+  },
+  {
+   "fieldname": "column_break_tax",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tax_included_in_price",
+   "fieldtype": "Select",
+   "label": "Menu Prices",
+   "options": "Tax added on top of item price\nTax included in item price",
+   "default": "Tax added on top of item price",
+   "depends_on": "apply_sales_tax"
+  },
+  {
+   "fieldname": "sales_tax_template",
+   "fieldtype": "Link",
+   "label": "Tax Template",
+   "options": "Sales Taxes and Charges Template",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_fbr",
+   "fieldtype": "Section Break",
+   "label": "FBR Point of Sale Integration",
+   "collapsible": 1,
+   "description": "Every counter sale is reported to FBR (PRAL); the FBR invoice number and its QR code print on the receipt."
+  },
+  {
+   "fieldname": "fbr_enabled",
+   "fieldtype": "Check",
+   "label": "Report Sales to FBR"
+  },
+  {
+   "fieldname": "fbr_mode",
+   "fieldtype": "Select",
+   "label": "Mode",
+   "options": "Mock\nSandbox\nLive",
+   "default": "Mock",
+   "depends_on": "fbr_enabled",
+   "description": "Mock: numbers are generated here and nothing is sent. Sandbox / Live: posted to the URL below."
+  },
+  {
+   "fieldname": "fbr_pos_id",
+   "fieldtype": "Data",
+   "label": "FBR POS ID",
+   "depends_on": "fbr_enabled",
+   "description": "Issued by FBR when the POS is registered"
+  },
+  {
+   "fieldname": "fbr_service_fee",
+   "fieldtype": "Currency",
+   "label": "FBR POS Service Fee per Invoice",
+   "default": "1",
+   "depends_on": "fbr_enabled",
+   "description": "Added to every reported invoice (Rs 1 under the FBR POS scheme); 0 to leave it out"
+  },
+  {
+   "fieldname": "column_break_fbr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fbr_url",
+   "fieldtype": "Data",
+   "label": "Post Invoice URL",
+   "depends_on": "eval:doc.fbr_enabled && doc.fbr_mode!='Mock'",
+   "description": "FBR sandbox / live PostData endpoint, or the local IMS fiscal component \u2014 as given by PRAL"
+  },
+  {
+   "fieldname": "fbr_token",
+   "fieldtype": "Password",
+   "label": "Access Token",
+   "depends_on": "eval:doc.fbr_enabled && doc.fbr_mode!='Mock'"
+  },
+  {
+   "fieldname": "fbr_pct_code",
+   "fieldtype": "Data",
+   "label": "Default PCT Code",
+   "depends_on": "fbr_enabled",
+   "description": "Tariff code sent per item (set per item later if needed)"
+  },
+  {
+   "fieldname": "fbr_block_on_failure",
+   "fieldtype": "Check",
+   "label": "Stop the Sale When FBR Fails",
+   "depends_on": "fbr_enabled",
+   "description": "Off: the sale completes and is re-sent later (hourly)"
+  },
+  {
+   "fieldname": "section_payments",
+   "fieldtype": "Section Break",
+   "label": "Payment Modes",
+   "description": "Offered at the counter in this order; the first is the default."
+  },
+  {
+   "fieldname": "payment_modes",
+   "fieldtype": "Table",
+   "label": "Payment Modes",
+   "options": "Restaurant Payment Mode"
+  },
+  {
+   "fieldname": "section_stock",
+   "fieldtype": "Section Break",
+   "label": "Stock"
+  },
+  {
+   "fieldname": "stock_deduction_moment",
+   "fieldtype": "Select",
+   "label": "Deduct Ingredients",
+   "options": "On Order Completion\nOn Invoice Submit",
+   "default": "On Order Completion",
+   "description": "Recipe (BOM) ingredients leave the branch kitchen in a background job"
+  },
+  {
+   "fieldname": "column_break_stock",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "run_jobs_inline",
+   "fieldtype": "Check",
+   "label": "Run Background Jobs Immediately",
+   "default": "1",
+   "description": "For a bench without a worker: stock deduction and notifications run in the request instead of the queue"
+  },
+  {
+   "fieldname": "section_kds",
+   "fieldtype": "Section Break",
+   "label": "Kitchen Display"
+  },
+  {
+   "fieldname": "kds_amber_minutes",
+   "fieldtype": "Int",
+   "label": "Amber After (minutes)",
+   "default": "8"
+  },
+  {
+   "fieldname": "kds_sound",
+   "fieldtype": "Check",
+   "label": "Sound on New Ticket",
+   "default": "1"
+  },
+  {
+   "fieldname": "column_break_b",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "kds_red_minutes",
+   "fieldtype": "Int",
+   "label": "Red After (minutes)",
+   "default": "15"
+  },
+  {
+   "fieldname": "kds_default_order_type",
+   "fieldtype": "Select",
+   "label": "Counter Orders Are",
+   "options": "Takeaway\nDine-in\nDelivery\nPickup",
+   "default": "Takeaway"
+  },
+  {
+   "fieldname": "section_delivery",
+   "fieldtype": "Section Break",
+   "label": "Delivery & Reviews"
+  },
+  {
+   "fieldname": "rider_assignment",
+   "fieldtype": "Select",
+   "label": "Rider Assignment",
+   "options": "Auto - Nearest\nAuto - Least Busy\nManual",
+   "default": "Auto - Nearest"
+  },
+  {
+   "fieldname": "rider_ping_seconds",
+   "fieldtype": "Int",
+   "label": "Rider Location Every (seconds)",
+   "default": "15"
+  },
+  {
+   "fieldname": "column_break_c",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "review_delay_minutes",
+   "fieldtype": "Int",
+   "label": "Send Review Link After (minutes)",
+   "default": "30"
+  },
+  {
+   "fieldname": "low_rating_alert",
+   "fieldtype": "Int",
+   "label": "Alert Manager At Or Below (stars)",
+   "default": "2"
+  },
+  {
+   "fieldname": "section_foodpanda",
+   "fieldtype": "Section Break",
+   "label": "Foodpanda",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "aggregator_mode",
+   "fieldtype": "Select",
+   "label": "Mode",
+   "options": "Mock\nLive",
+   "default": "Mock",
+   "description": "Mock: orders come from the built-in simulator, nothing leaves this server"
+  },
+  {
+   "fieldname": "foodpanda_base_url",
+   "fieldtype": "Data",
+   "label": "API Base URL",
+   "depends_on": "eval:doc.aggregator_mode=='Live'"
+  },
+  {
+   "fieldname": "foodpanda_chain_code",
+   "fieldtype": "Data",
+   "label": "Chain Code",
+   "depends_on": "eval:doc.aggregator_mode=='Live'"
+  },
+  {
+   "fieldname": "column_break_fp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "foodpanda_client_id",
+   "fieldtype": "Data",
+   "label": "Client ID",
+   "depends_on": "eval:doc.aggregator_mode=='Live'"
+  },
+  {
+   "fieldname": "foodpanda_client_secret",
+   "fieldtype": "Password",
+   "label": "Client Secret",
+   "depends_on": "eval:doc.aggregator_mode=='Live'"
+  },
+  {
+   "fieldname": "foodpanda_webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Secret",
+   "description": "Verifies order webhooks (Live)"
+  },
+  {
+   "fieldname": "section_whatsapp",
+   "fieldtype": "Section Break",
+   "label": "WhatsApp / SMS",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "messaging_mode",
+   "fieldtype": "Select",
+   "label": "Mode",
+   "options": "Mock\nLive",
+   "default": "Mock",
+   "description": "Mock: messages are logged as Integration Requests, nothing is sent"
+  },
+  {
+   "fieldname": "whatsapp_provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "Meta WhatsApp Cloud API\nTwilio\nFrappe WhatsApp app",
+   "default": "Meta WhatsApp Cloud API",
+   "depends_on": "eval:doc.messaging_mode=='Live'"
+  },
+  {
+   "fieldname": "column_break_wa",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "whatsapp_phone_number_id",
+   "fieldtype": "Data",
+   "label": "Phone Number ID / Sender",
+   "depends_on": "eval:doc.messaging_mode=='Live'"
+  },
+  {
+   "fieldname": "whatsapp_token",
+   "fieldtype": "Password",
+   "label": "Access Token",
+   "depends_on": "eval:doc.messaging_mode=='Live'"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  },
+  {
+   "role": "Stock User",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "row_format": "Dynamic",
+ "actions": [],
+ "links": []
+}

@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+
+jobs:
+  backend-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: pip install ruff==0.8.6
+      - run: ruff check restaurant_os
+      - run: python -m compileall -q restaurant_os
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable && pnpm install --frozen-lockfile
+      - run: pnpm -r typecheck
+      - run: pnpm --filter @ros/pos test
+      - run: pnpm --filter @ros/pos exec vite build
+
+# Backend integration tests need a Frappe bench with ERPNext, HRMS, POS Awesome and mm_core; run them on the dev bench:
+#   bench --site restaurant.localhost run-tests --app restaurant_os

@@ -1,0 +1,73 @@
+{
+ "doctype": "DocType",
+ "name": "Menu Modifier",
+ "module": "Restaurant OS",
+ "custom": 0,
+ "engine": "InnoDB",
+ "creation": "2026-10-20 12:00:00.000000",
+ "modified": "2026-10-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator",
+ "description": "",
+ "istable": 1,
+ "issingle": 0,
+ "editable_grid": 1,
+ "field_order": [
+  "modifier_name",
+  "price",
+  "item",
+  "bom",
+  "station",
+  "is_default"
+ ],
+ "fields": [
+  {
+   "fieldname": "modifier_name",
+   "fieldtype": "Data",
+   "label": "Modifier",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "price",
+   "fieldtype": "Currency",
+   "label": "Extra Price",
+   "in_list_view": 1,
+   "description": "Added to the menu item's price"
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Add-on Item",
+   "options": "Item",
+   "in_list_view": 1,
+   "description": "Optional: an item sold / stocked for this add-on"
+  },
+  {
+   "fieldname": "bom",
+   "fieldtype": "Link",
+   "label": "Recipe (BOM)",
+   "options": "BOM",
+   "description": "Ingredients consumed when this modifier is chosen"
+  },
+  {
+   "fieldname": "station",
+   "fieldtype": "Link",
+   "label": "Kitchen Station",
+   "options": "Kitchen Station"
+  },
+  {
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "label": "Default"
+  }
+ ],
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "row_format": "Dynamic",
+ "actions": [],
+ "links": []
+}

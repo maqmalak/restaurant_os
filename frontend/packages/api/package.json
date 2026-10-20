@@ -1,0 +1,9 @@
+{
+  "name": "@ros/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Restaurant OS API client: Frappe REST/RPC calls, CSRF handling and error formatting, shared by every app.",
+  "exports": { "./frappe": "./src/frappe.ts" },
+  "dependencies": { "axios": "^1.20.0" }
+}

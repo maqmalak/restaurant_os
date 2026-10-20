@@ -1,0 +1,130 @@
+{
+ "doctype": "DocType",
+ "name": "Kitchen Station",
+ "module": "Restaurant OS",
+ "custom": 0,
+ "engine": "InnoDB",
+ "creation": "2026-10-20 12:00:00.000000",
+ "modified": "2026-10-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator",
+ "description": "A KDS station (grill, fryer, drinks\u2026).",
+ "istable": 0,
+ "issingle": 0,
+ "editable_grid": 0,
+ "field_order": [
+  "station_name",
+  "branch",
+  "column_break_a",
+  "color",
+  "printer",
+  "disabled",
+  "section_routing",
+  "item_groups",
+  "items"
+ ],
+ "fields": [
+  {
+   "fieldname": "station_name",
+   "fieldtype": "Data",
+   "label": "Station",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Restaurant Branch",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_a",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "color",
+   "fieldtype": "Color",
+   "label": "Colour"
+  },
+  {
+   "fieldname": "printer",
+   "fieldtype": "Data",
+   "label": "Fallback Printer",
+   "description": "Only used when the KDS screen is offline"
+  },
+  {
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled"
+  },
+  {
+   "fieldname": "section_routing",
+   "fieldtype": "Section Break",
+   "label": "Routing",
+   "description": "Order lines go to the station whose items / item groups match (items win over groups)."
+  },
+  {
+   "fieldname": "item_groups",
+   "fieldtype": "Table",
+   "label": "Item Groups",
+   "options": "Kitchen Station Item Group"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Kitchen Station Item"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  },
+  {
+   "role": "Stock User",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "row_format": "Dynamic",
+ "actions": [],
+ "links": [],
+ "autoname": "format:{branch}-{station_name}",
+ "title_field": "station_name",
+ "show_title_field_in_link": 1
+}

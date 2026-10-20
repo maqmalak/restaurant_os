@@ -1,0 +1,333 @@
+{
+ "doctype": "DocType",
+ "name": "Restaurant Order",
+ "module": "Restaurant OS",
+ "custom": 0,
+ "engine": "InnoDB",
+ "creation": "2026-10-20 12:00:00.000000",
+ "modified": "2026-10-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator",
+ "description": "The operational order \u2014 every channel, one queue \u2014 linked to its POS / Sales Invoice.",
+ "istable": 0,
+ "issingle": 0,
+ "editable_grid": 0,
+ "field_order": [
+  "naming_series",
+  "order_no",
+  "status",
+  "channel",
+  "order_type",
+  "priority",
+  "column_break_a",
+  "branch",
+  "company",
+  "table",
+  "guests",
+  "customer",
+  "customer_name",
+  "section_items",
+  "items",
+  "notes",
+  "section_links",
+  "invoice_doctype",
+  "invoice",
+  "grand_total",
+  "column_break_l",
+  "external_order_id",
+  "client_order_uuid",
+  "section_stock",
+  "stock_status",
+  "stock_entry",
+  "column_break_s",
+  "stock_error",
+  "section_times",
+  "placed_at",
+  "accepted_at",
+  "preparing_at",
+  "column_break_t",
+  "ready_at",
+  "completed_at",
+  "cancelled_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "RO-.YY.-.#####",
+   "default": "RO-.YY.-.#####",
+   "hidden": 1
+  },
+  {
+   "fieldname": "order_no",
+   "fieldtype": "Data",
+   "label": "Order No",
+   "read_only": 1,
+   "in_list_view": 1,
+   "bold": 1,
+   "description": "Short daily number called out at the pass"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Placed\nAccepted\nPreparing\nReady\nPicked Up\nOut for Delivery\nDelivered\nCompleted\nCancelled\nRejected\nReturned",
+   "default": "Placed",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "channel",
+   "fieldtype": "Select",
+   "label": "Channel",
+   "options": "POS\nDine-in\nTakeaway\nDrive-thru\nKiosk\nWeb\nApp\nFoodpanda",
+   "default": "POS",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "order_type",
+   "fieldtype": "Select",
+   "label": "Order Type",
+   "options": "Takeaway\nDine-in\nDelivery\nPickup",
+   "default": "Takeaway",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Int",
+   "label": "Priority",
+   "default": "0",
+   "description": "Higher first on the KDS (VIP, delivery pickup time)"
+  },
+  {
+   "fieldname": "column_break_a",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Restaurant Branch",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "table",
+   "fieldtype": "Link",
+   "label": "Table",
+   "options": "Restaurant Table"
+  },
+  {
+   "fieldname": "guests",
+   "fieldtype": "Int",
+   "label": "Guests"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_items",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Restaurant Order Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Order Notes"
+  },
+  {
+   "fieldname": "section_links",
+   "fieldtype": "Section Break",
+   "label": "Links"
+  },
+  {
+   "fieldname": "invoice_doctype",
+   "fieldtype": "Link",
+   "label": "Invoice Type",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "invoice",
+   "fieldtype": "Dynamic Link",
+   "label": "Invoice",
+   "options": "invoice_doctype",
+   "read_only": 1
+  },
+  {
+   "fieldname": "grand_total",
+   "fieldtype": "Currency",
+   "label": "Grand Total",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_l",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "external_order_id",
+   "fieldtype": "Data",
+   "label": "External Order ID",
+   "description": "Aggregator order id (Foodpanda\u2026)"
+  },
+  {
+   "fieldname": "client_order_uuid",
+   "fieldtype": "Data",
+   "label": "Client Order UUID",
+   "unique": 1,
+   "description": "Idempotency key from the ordering client"
+  },
+  {
+   "fieldname": "section_stock",
+   "fieldtype": "Section Break",
+   "label": "Stock"
+  },
+  {
+   "fieldname": "stock_status",
+   "fieldtype": "Select",
+   "label": "Ingredients",
+   "options": "Pending\nPosted\nNot Needed\nFailed",
+   "default": "Pending",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stock_entry",
+   "fieldtype": "Link",
+   "label": "Stock Entry",
+   "options": "Stock Entry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_s",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "stock_error",
+   "fieldtype": "Small Text",
+   "label": "Stock Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_times",
+   "fieldtype": "Section Break",
+   "label": "Timeline",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "placed_at",
+   "fieldtype": "Datetime",
+   "label": "Placed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "accepted_at",
+   "fieldtype": "Datetime",
+   "label": "Accepted At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "preparing_at",
+   "fieldtype": "Datetime",
+   "label": "Preparing At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_t",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ready_at",
+   "fieldtype": "Datetime",
+   "label": "Ready At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "Completed / Delivered At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancelled_at",
+   "fieldtype": "Datetime",
+   "label": "Cancelled At",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  },
+  {
+   "role": "Stock User",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "row_format": "Dynamic",
+ "actions": [],
+ "links": [],
+ "autoname": "naming_series:",
+ "title_field": "order_no",
+ "show_title_field_in_link": 1,
+ "search_fields": "order_no,customer_name,status,channel"
+}

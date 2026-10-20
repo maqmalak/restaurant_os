@@ -1,0 +1,204 @@
+{
+ "doctype": "DocType",
+ "name": "Restaurant Branch",
+ "module": "Restaurant OS",
+ "custom": 0,
+ "engine": "InnoDB",
+ "creation": "2026-10-20 12:00:00.000000",
+ "modified": "2026-10-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator",
+ "description": "A restaurant branch: its company, cost center, central store and kitchen warehouses, and counters.",
+ "istable": 0,
+ "issingle": 0,
+ "editable_grid": 0,
+ "field_order": [
+  "branch_name",
+  "company",
+  "cost_center",
+  "column_break_a",
+  "disabled",
+  "phone",
+  "section_stock",
+  "store_warehouse",
+  "column_break_b",
+  "kitchen_warehouse",
+  "section_delivery",
+  "address",
+  "latitude",
+  "longitude",
+  "column_break_c",
+  "delivery_radius_km",
+  "delivery_sla_minutes",
+  "prep_sla_minutes",
+  "section_channels",
+  "pos_profiles"
+ ],
+ "fields": [
+  {
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center",
+   "description": "Branch P&L"
+  },
+  {
+   "fieldname": "column_break_a",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "section_stock",
+   "fieldtype": "Section Break",
+   "label": "Stock"
+  },
+  {
+   "fieldname": "store_warehouse",
+   "fieldtype": "Link",
+   "label": "Central Store Warehouse",
+   "options": "Warehouse",
+   "description": "Procurement lands here"
+  },
+  {
+   "fieldname": "column_break_b",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "kitchen_warehouse",
+   "fieldtype": "Link",
+   "label": "Kitchen Warehouse",
+   "options": "Warehouse",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Recipes are consumed from here"
+  },
+  {
+   "fieldname": "section_delivery",
+   "fieldtype": "Section Break",
+   "label": "Location & Delivery"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "6"
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "6"
+  },
+  {
+   "fieldname": "column_break_c",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "delivery_radius_km",
+   "fieldtype": "Float",
+   "label": "Delivery Radius (km)",
+   "default": "5"
+  },
+  {
+   "fieldname": "delivery_sla_minutes",
+   "fieldtype": "Int",
+   "label": "Delivery SLA (minutes)",
+   "default": "45"
+  },
+  {
+   "fieldname": "prep_sla_minutes",
+   "fieldtype": "Int",
+   "label": "Kitchen SLA (minutes)",
+   "default": "15"
+  },
+  {
+   "fieldname": "section_channels",
+   "fieldtype": "Section Break",
+   "label": "Counters & Channels"
+  },
+  {
+   "fieldname": "pos_profiles",
+   "fieldtype": "Table",
+   "label": "POS Profiles",
+   "options": "Restaurant Branch POS Profile"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  },
+  {
+   "role": "Stock User",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "row_format": "Dynamic",
+ "actions": [],
+ "links": [],
+ "autoname": "field:branch_name"
+}

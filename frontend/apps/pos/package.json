@@ -1,0 +1,45 @@
+{
+  "name": "@ros/pos",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Restaurant OS cashier POS (terminal, cash, stock, shifts) — imported from the MicroMax React POS.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build && node scripts/copy-html.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ros/api": "workspace:*",
+    "@ros/types": "workspace:*",
+    "@ros/ui": "workspace:*",
+    "axios": "^1.20.0",
+    "clsx": "^2.1.1",
+    "frappe-react-sdk": "^1.17.1",
+    "lucide-react": "^0.441.0",
+    "qrcode-generator": "1.4.4",
+    "quill": "^2.0.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.4.1",
+    "react-router-dom": "^6.26.2",
+    "recharts": "^2.12.7",
+    "swr": "^2.2.5",
+    "tailwind-merge": "^2.5.2",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.3",
+    "vitest": "2.1.9"
+  }
+}
