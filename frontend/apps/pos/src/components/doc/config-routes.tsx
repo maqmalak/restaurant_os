@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { DocFormPage } from "./doc-form-page";
 import { DocListPage } from "./doc-list-page";
@@ -18,7 +19,7 @@ export function ConfigRoutes({ prefix, configs, index, extra }: { prefix: string
         return cfg.single
           ? <Route key={path} path={path} element={<DocFormPage config={cfg} />} />
           : [
-              <Route key={path} path={path} element={<DocListPage config={cfg} />} />,
+              <Route key={path} path={path} element={cfg.listPage ? <Suspense fallback={null}><cfg.listPage config={cfg} /></Suspense> : <DocListPage config={cfg} />} />,
               <Route key={`${path}/:name`} path={`${path}/:name`} element={<DocFormPage config={cfg} />} />,
             ];
       })}

@@ -369,6 +369,7 @@ write("Wastage Log", [
        for r in ("System Manager", "Stock Manager", "Sales Manager")] + [{"role": "Stock User", "read": 1, "write": 1, "create": 1, "submit": 1, "report": 1, "print": 1}]})
 write("Rider", [
     F("rider_name", "Data", "Rider Name", reqd=1, in_list_view=1),
+    F("photo", "Attach Image", "Photo", description="Shown on the dispatch board and rider cards (else the employee's photo)"),
     F("employee", "Link", "Employee", options="Employee"),
     F("user", "Link", "Login (User)", options="User", unique=1, description="The rider signs in to the rider app with this user"),
     F("phone", "Data", "Phone", options="Phone", in_list_view=1),
@@ -384,7 +385,7 @@ write("Rider", [
     F("latitude", "Float", "Latitude", precision="6", read_only=1),
     F("longitude", "Float", "Longitude", precision="6", read_only=1),
     F("cash_in_hand", "Currency", "Cash in Hand", read_only=1, description="Collected on deliveries, not yet handed over"),
-], autoname="hash", title_field="rider_name", search="rider_name,phone,branch", desc="A delivery rider (an Employee with a login for the rider app).")
+], autoname="hash", title_field="rider_name", search="rider_name,phone,branch", desc="A delivery rider (an Employee with a login for the rider app).", extra={"image_field": "photo"})
 
 write("Delivery Assignment", [
     F("order", "Link", "Restaurant Order", options="Restaurant Order", reqd=1, in_list_view=1),

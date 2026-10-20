@@ -14,6 +14,7 @@
  "editable_grid": 0,
  "field_order": [
   "rider_name",
+  "photo",
   "employee",
   "user",
   "phone",
@@ -37,6 +38,12 @@
    "label": "Rider Name",
    "reqd": 1,
    "in_list_view": 1
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Photo",
+   "description": "Shown on the dispatch board and rider cards (else the employee's photo)"
   },
   {
    "fieldname": "employee",
@@ -184,5 +191,6 @@
  "autoname": "hash",
  "title_field": "rider_name",
  "show_title_field_in_link": 1,
- "search_fields": "rider_name,phone,branch"
+ "search_fields": "rider_name,phone,branch",
+ "image_field": "photo"
 }

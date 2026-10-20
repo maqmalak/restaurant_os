@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { ColumnDef } from "@/components/tables/data-table";
 import type { FormFieldMeta } from "@/components/forms/field-primitives";
@@ -131,6 +131,8 @@ export interface DocConfig {
    *  with — Bank has no company field). Return undefined while loading; the list waits. */
   useScopeFilters?: (company?: string) => unknown[][] | undefined;
   listActions?: ReactNode;
+  /** A hand-made list page (e.g. a card view) used instead of the generic table; the form routes stay the same. */
+  listPage?: ComponentType<{ config: DocConfig }>;
   listHeaderExtra?: ReactNode;
 
   // ---- form ------------------------------------------------------------------------------------

@@ -1,9 +1,17 @@
 import { Banknote, Bike, Megaphone, MessageSquareHeart, Send, Users, ChefHat, ClipboardList, Trash2, LayoutGrid, MapPin, Plug, Receipt, Settings2, SlidersVertical, Store, UtensilsCrossed } from "lucide-react";
+import { lazy } from "react";
 import toast from "react-hot-toast";
 import type { DocConfig } from "@/components/doc/doc-config";
 import { postCall } from "@/services/frappe";
 import { sec, colBreak, tab, data, int, float, check, text, link, select, req, ro, nameCol, textCol, numCol, yesNoCol, statusCol, currency, percent, dateTimeCol, moneyCol, datetime } from "@/components/doc/doc-helpers";
 import { todayISO } from "@/utils/dates";
+
+// card views (lazy: only loaded when the page opens)
+const FloorAreasPage = lazy(() => import("./MasterCardPages").then((m) => ({ default: m.FloorAreasPage })));
+const ModifierGroupsPage = lazy(() => import("./MasterCardPages").then((m) => ({ default: m.ModifierGroupsPage })));
+const TablesPage = lazy(() => import("./MasterCardPages").then((m) => ({ default: m.TablesPage })));
+const RidersPage = lazy(() => import("./MasterCardPages").then((m) => ({ default: m.RidersPage })));
+const StationsPage = lazy(() => import("./MasterCardPages").then((m) => ({ default: m.StationsPage })));
 
 /* Restaurant masters (Phase 2): branches, KDS stations, the floor plan, menu modifiers, settings. */
 
@@ -59,6 +67,7 @@ export const STATION_CONFIG: DocConfig = {
   plural: "Kitchen Stations",
   subtitle: "KDS stations — order lines go to the station listing the item, else its item group",
   icon: ChefHat,
+  listPage: StationsPage,
   listFields: ["name", "station_name", "branch", "color", "disabled", "modified"],
   columns: [nameCol("Station", (r) => r.branch), textCol("station_name", "Name"), yesNoCol("disabled", "Status", "Disabled", "Active")],
   searchFields: ["name", "station_name"],
@@ -86,6 +95,7 @@ export const FLOOR_AREA_CONFIG: DocConfig = {
   plural: "Floor Areas",
   subtitle: "Dining areas of a branch",
   icon: LayoutGrid,
+  listPage: FloorAreasPage,
   listFields: ["name", "area_name", "branch", "modified"],
   columns: [nameCol("Area", (r) => r.branch)],
   searchFields: ["name", "area_name"],
@@ -100,6 +110,7 @@ export const TABLE_CONFIG: DocConfig = {
   plural: "Tables",
   subtitle: "Dine-in tables and their live status",
   icon: UtensilsCrossed,
+  listPage: TablesPage,
   listFields: ["name", "table_number", "branch", "floor_area", "seats", "status", "modified"],
   columns: [nameCol("Table", (r) => r.floor_area), numCol("seats", "Seats", 0), statusCol("status", "Status", "Free")],
   searchFields: ["name", "table_number"],
@@ -130,6 +141,7 @@ export const MODIFIER_GROUP_CONFIG: DocConfig = {
   plural: "Menu Modifiers",
   subtitle: "Add-ons and choices offered with menu items (spice level, bread, extra cheese)",
   icon: SlidersVertical,
+  listPage: ModifierGroupsPage,
   listFields: ["name", "min_select", "max_select", "required", "disabled", "modified"],
   columns: [nameCol("Group"), numCol("min_select", "Min", 0), numCol("max_select", "Max", 0), yesNoCol("required", "Required", "Yes", "No")],
   searchFields: ["name"],
@@ -326,6 +338,7 @@ export const RIDER_CONFIG: DocConfig = {
   plural: "Riders",
   subtitle: "Delivery riders — an employee with a login for the rider app",
   icon: Bike,
+  listPage: RidersPage,
   listFields: ["name", "rider_name", "branch", "phone", "vehicle", "status", "cash_in_hand", "last_seen", "disabled", "modified"],
   columns: [nameCol("Rider", (r) => r.rider_name), textCol("branch", "Branch"), textCol("phone", "Phone"), textCol("vehicle", "Vehicle"),
     moneyCol("cash_in_hand", "Cash in Hand"), dateTimeCol("last_seen", "Last Seen"), statusCol("status", "Status", "Off Duty")],
@@ -335,6 +348,7 @@ export const RIDER_CONFIG: DocConfig = {
   fields: [
     sec("Rider"),
     req(data("rider_name", "Rider Name")),
+    { ...data("photo", "Photo"), fieldtype: "Attach Image" as const },
     link("employee", "Employee", "Employee"),
     link("user", "Login (User)", "User"),
     data("phone", "Phone"),
