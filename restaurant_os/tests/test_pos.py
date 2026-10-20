@@ -201,18 +201,19 @@ class TestRestaurantPOS(IntegrationTestCase):
 		self.assertTrue(frappe.db.exists("Integration Request", {"integration_request_service": "FBR", "reference_docname": r["name"]}))
 
 	# ---------------------------------------------------------------- delivery
-	def test_foodpanda_invoiced_on_accept_and_delivered(self):
+	def test_foodpanda_invoiced_when_delivered(self):
 		from restaurant_os.integrations.aggregators.foodpanda import simulate_order
 
 		order = simulate_order(1)
-		self.assertEqual(order.invoice_doctype, "Sales Invoice")
-		si = frappe.db.get_value("Sales Invoice", order.invoice, ["customer", "docstatus", "fbr_status", "selling_price_list"], as_dict=True)
-		self.assertEqual((si.customer, si.docstatus, si.selling_price_list), ("Foodpanda", 1, "Foodpanda"))
-		self.assertEqual(si.fbr_status, "Posted")
-		for expected in ("Preparing", "Ready", "Picked Up"):
-			self.assertEqual(kds.advance(order.name)["status"], expected)
+		self.assertFalse(order.invoice, "not invoiced on acceptance")
+		while frappe.db.get_value("Restaurant Order", order.name, "status") != "Picked Up":
+			kds.advance(order.name)
 		self.assertIn(frappe.db.get_value("Restaurant Order", order.name, "stock_status"), ("Posted", "Not Needed"))
+		self.assertFalse(frappe.db.get_value("Restaurant Order", order.name, "invoice"))
 		self.assertEqual(kds.advance(order.name)["status"], "Delivered")   # Foodpanda's rider: no Out for Delivery step
+		inv = frappe.db.get_value("Restaurant Order", order.name, "invoice")
+		si = frappe.db.get_value("Sales Invoice", inv, ["customer", "docstatus", "fbr_status", "selling_price_list"], as_dict=True)
+		self.assertEqual((si.customer, si.docstatus, si.selling_price_list, si.fbr_status), ("Foodpanda", 1, "Foodpanda", "Posted"))
 
 	def test_own_delivery_cash_on_delivery(self):
 		from restaurant_os.services.orders import create_order
@@ -266,3 +267,81 @@ class TestRestaurantPOS(IntegrationTestCase):
 		self.assertAlmostEqual(flt(onion.wastage), 2, places=3)
 		self.assertAlmostEqual(flt(onion.variance), -1, places=3)
 		self.assertLess(flt(onion.variance_value), 0)
+
+	# ---------------------------------------------------------------- riders (own + Foodpanda)
+	def _as(self, user, fn, *a, **kw):
+		frappe.set_user(user)
+		try:
+			return fn(*a, **kw)
+		finally:
+			frappe.set_user("Administrator")
+
+	def _ready(self, order):
+		while frappe.db.get_value("Restaurant Order", order, "status") != "Ready":
+			kds.advance(order)
+
+	def test_own_rider_end_to_end(self):
+		from restaurant_os.api import riders as api
+
+		riders = frappe.get_all("Rider", {"branch": masters.BRANCH}, ["name", "user"], order_by="rider_name")
+		for r in riders:
+			self._as(r.user, api.set_duty, 1)
+		o = api.new_delivery_order(json.dumps({"customer_name": "Test Diner", "phone": "+92 300 0000001", "address": "House 1, Gulberg",
+											   "lat": 31.53, "lng": 74.36, "items": [{"item_code": "Chicken Tikka", "qty": 2}]}))
+		order = frappe.get_doc("Restaurant Order", o["order"])
+		self.assertEqual((order.delivery_by, order.channel), ("Own Rider", "Phone"))
+		self.assertTrue(order.tracking_key and order.delivery_otp and order.cod_amount > 0)
+		self._ready(order.name)
+		da = frappe.get_doc("Delivery Assignment", frappe.db.get_value("Restaurant Order", order.name, "delivery_assignment"))
+		self.assertEqual(da.status, "Offered")
+		# the first rider says no → offered to the next
+		first = next(r for r in riders if r.name == da.rider)
+		self._as(first.user, api.reject, da.name, "Puncture")
+		da2 = frappe.get_doc("Delivery Assignment", frappe.db.get_value("Restaurant Order", order.name, "delivery_assignment"))
+		self.assertNotEqual(da2.rider, first.name)
+		rider = next(r for r in riders if r.name == da2.rider)
+		self._as(rider.user, api.accept, da2.name)
+		self._as(rider.user, api.location, 31.521, 74.359, 8)
+		self._as(rider.user, api.pickup, da2.name)
+		self.assertEqual(frappe.db.get_value("Restaurant Order", order.name, "status"), "Out for Delivery")
+		t = api.track(order.tracking_key)
+		self.assertEqual((t["status"], t["rider"]["lat"]), ("Out for Delivery", 31.521))
+		with self.assertRaises(frappe.ValidationError):
+			self._as(rider.user, api.deliver, da2.name, otp="0000" if order.delivery_otp != "0000" else "1111")
+		cod = flt(frappe.db.get_value("Restaurant Order", order.name, "cod_amount"))
+		res = self._as(rider.user, api.deliver, da2.name, otp=order.delivery_otp, cash=cod)
+		self.assertEqual(flt(frappe.db.get_value("Sales Invoice", res["invoice"], "outstanding_amount")), 0, "rider's cash settles the invoice")
+		self.assertAlmostEqual(flt(frappe.db.get_value("Rider", rider.name, "cash_in_hand")), cod, places=2)
+		# hand the cash to the counter: it lands in the cashier's shift
+		before = next(m for m in pos.shift_summary()["modes"] if m["mode_of_payment"] == "Cash")["expected"]
+		api.handover(rider.name)
+		after = next(m for m in pos.shift_summary()["modes"] if m["mode_of_payment"] == "Cash")["expected"]
+		self.assertAlmostEqual(after - before, cod, places=2)
+		self.assertEqual(flt(frappe.db.get_value("Rider", rider.name, "cash_in_hand")), 0)
+		self.assertEqual(api.track(order.tracking_key)["status"], "Delivered")
+
+	def test_manual_dispatch(self):
+		from restaurant_os.api import riders as api
+
+		rider = frappe.get_all("Rider", {"branch": masters.BRANCH}, ["name", "user"], limit=1)[0]
+		self._as(rider.user, api.set_duty, 1)
+		o = api.simulate_delivery_order()
+		self.assertEqual(api.assign(o["order"], rider.name)["assignment"][:3], "DA-")
+		self.assertEqual(frappe.db.get_value("Restaurant Order", o["order"], "rider"), rider.name)
+		board = api.dispatch()
+		self.assertTrue(any(x["name"] == o["order"] for x in board["orders"]))
+
+	def test_foodpanda_rider_tracked(self):
+		from restaurant_os.api import riders as api
+		from restaurant_os.integrations.aggregators.foodpanda import simulate_order
+
+		order = simulate_order(1)
+		self.assertEqual(order.delivery_by, "Foodpanda Rider")
+		self._ready(order.name)
+		doc = frappe.get_doc("Restaurant Order", order.name)
+		self.assertTrue(doc.ext_rider_name, "Foodpanda (mock) assigns its rider at Ready")
+		self.assertFalse(doc.delivery_assignment, "own riders are not offered Foodpanda-rider orders")
+		kds.advance(order.name)                              # Foodpanda rider picks up
+		t = api.track(doc.tracking_key)
+		self.assertEqual(t["rider"]["by"], "Foodpanda Rider")
+		self.assertIsNotNone(t["rider"]["lat"])

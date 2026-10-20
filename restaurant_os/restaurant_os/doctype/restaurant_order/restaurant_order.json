@@ -36,6 +36,27 @@
   "column_break_l",
   "external_order_id",
   "client_order_uuid",
+  "section_delivery",
+  "delivery_phone",
+  "delivery_address",
+  "delivery_lat",
+  "delivery_lng",
+  "column_break_d",
+  "delivery_by",
+  "rider",
+  "delivery_assignment",
+  "cod_amount",
+  "distance_km",
+  "delivery_otp",
+  "tracking_key",
+  "section_ext_rider",
+  "ext_rider_name",
+  "ext_rider_phone",
+  "ext_rider_status",
+  "column_break_x",
+  "ext_rider_lat",
+  "ext_rider_lng",
+  "ext_rider_eta",
   "section_stock",
   "stock_status",
   "stock_entry",
@@ -82,7 +103,7 @@
    "fieldname": "channel",
    "fieldtype": "Select",
    "label": "Channel",
-   "options": "POS\nDine-in\nTakeaway\nDrive-thru\nKiosk\nWeb\nApp\nFoodpanda",
+   "options": "POS\nDine-in\nTakeaway\nPhone\nDrive-thru\nKiosk\nWeb\nApp\nFoodpanda",
    "default": "POS",
    "in_list_view": 1,
    "in_standard_filter": 1
@@ -203,6 +224,140 @@
    "label": "Client Order UUID",
    "unique": 1,
    "description": "Idempotency key from the ordering client"
+  },
+  {
+   "fieldname": "section_delivery",
+   "fieldtype": "Section Break",
+   "label": "Delivery",
+   "depends_on": "eval:doc.order_type=='Delivery'"
+  },
+  {
+   "fieldname": "delivery_phone",
+   "fieldtype": "Data",
+   "label": "Customer Phone",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "delivery_address",
+   "fieldtype": "Small Text",
+   "label": "Delivery Address"
+  },
+  {
+   "fieldname": "delivery_lat",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "6"
+  },
+  {
+   "fieldname": "delivery_lng",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "6"
+  },
+  {
+   "fieldname": "column_break_d",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "delivery_by",
+   "fieldtype": "Select",
+   "label": "Delivered By",
+   "options": "\nOwn Rider\nFoodpanda Rider",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "rider",
+   "fieldtype": "Link",
+   "label": "Rider",
+   "options": "Rider",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "delivery_assignment",
+   "fieldtype": "Link",
+   "label": "Delivery Assignment",
+   "options": "Delivery Assignment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cod_amount",
+   "fieldtype": "Currency",
+   "label": "Cash to Collect",
+   "description": "0 when paid in advance / aggregator"
+  },
+  {
+   "fieldname": "distance_km",
+   "fieldtype": "Float",
+   "label": "Distance (km)",
+   "read_only": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "delivery_otp",
+   "fieldtype": "Data",
+   "label": "Delivery Code",
+   "read_only": 1,
+   "description": "Shown to the customer on the tracking page; the rider enters it"
+  },
+  {
+   "fieldname": "tracking_key",
+   "fieldtype": "Data",
+   "label": "Tracking Key",
+   "read_only": 1,
+   "unique": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "section_ext_rider",
+   "fieldtype": "Section Break",
+   "label": "Aggregator Rider",
+   "depends_on": "eval:doc.delivery_by=='Foodpanda Rider'",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "ext_rider_name",
+   "fieldtype": "Data",
+   "label": "Rider",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ext_rider_phone",
+   "fieldtype": "Data",
+   "label": "Rider Phone",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ext_rider_status",
+   "fieldtype": "Data",
+   "label": "Rider Status",
+   "read_only": 1,
+   "description": "As reported by Foodpanda (assigned, arriving, picked up, delivered)"
+  },
+  {
+   "fieldname": "column_break_x",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ext_rider_lat",
+   "fieldtype": "Float",
+   "label": "Rider Latitude",
+   "precision": "6",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ext_rider_lng",
+   "fieldtype": "Float",
+   "label": "Rider Longitude",
+   "precision": "6",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ext_rider_eta",
+   "fieldtype": "Datetime",
+   "label": "Rider ETA",
+   "read_only": 1
   },
   {
    "fieldname": "section_stock",

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-21 — Phase 7: delivery riders & tracking (own riders + Foodpanda)
+
+- **Foodpanda orders invoiced when delivered** (owner's choice), like own deliveries.
+- **Rider** (Employee + login, role Delivery Rider), **Delivery Assignment**, **Rider Location Log** (7 days).
+- **Assignment**: a delivery reaching Ready is offered to the nearest / least-busy available rider (setting) or waits for
+  manual dispatch; a declined offer goes to the next rider.
+- **Rider app** `/ros/rider` (phone): duty switch, offers (accept / decline), call, route in Google Maps, picked up,
+  delivered with the customer's delivery code or a photo, cash collected; live GPS while on duty.
+- **Cash on delivery**: Payment Entry against the invoice into "Rider Cash"; **handover** at the counter = Journal Entry
+  into the cashier's open shift (the shift close expects it).
+- **Foodpanda riders**: tracked from Foodpanda's updates (mock: rider assigned at Ready, rides to the customer after
+  pickup); setting to deliver Foodpanda orders with own riders instead.
+- **Dispatch map** `/ros/dispatch`: riders (own + Foodpanda) and drop-offs on OpenStreetMap, waiting / on the way lists,
+  manual assignment, rider cash handover, **phone delivery orders** (map pin), demo order button.
+- **Customer tracking page** `/ros/track/<key>` (public): steps, rider on the map, ETA, delivery code, cash to pay.
+- KDS delivery cards show the rider. Tests: 20 backend + Vitest passing.
+
 ## 2026-10-21 — Phase 5 (stock control) + delivery completion
 
 - **Delivery orders finished end to end**: Foodpanda orders are invoiced on acceptance to the Foodpanda customer (Foodpanda

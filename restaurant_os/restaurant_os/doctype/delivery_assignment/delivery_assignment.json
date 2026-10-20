@@ -1,0 +1,212 @@
+{
+ "doctype": "DocType",
+ "name": "Delivery Assignment",
+ "module": "Restaurant OS",
+ "custom": 0,
+ "engine": "InnoDB",
+ "creation": "2026-10-20 12:00:00.000000",
+ "modified": "2026-10-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator",
+ "description": "A delivery offered to / done by a rider.",
+ "istable": 0,
+ "issingle": 0,
+ "editable_grid": 0,
+ "field_order": [
+  "order",
+  "rider",
+  "branch",
+  "status",
+  "column_break_a",
+  "offered_at",
+  "accepted_at",
+  "picked_at",
+  "delivered_at",
+  "section_proof",
+  "otp_verified",
+  "proof_photo",
+  "reject_reason",
+  "column_break_p",
+  "distance_km",
+  "delivery_minutes",
+  "cash_collected",
+  "payment_entry",
+  "handed_over",
+  "handover_entry"
+ ],
+ "fields": [
+  {
+   "fieldname": "order",
+   "fieldtype": "Link",
+   "label": "Restaurant Order",
+   "options": "Restaurant Order",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "rider",
+   "fieldtype": "Link",
+   "label": "Rider",
+   "options": "Rider",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Restaurant Branch",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Offered\nAccepted\nRejected\nPicked Up\nDelivered\nCancelled",
+   "default": "Offered",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_a",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "offered_at",
+   "fieldtype": "Datetime",
+   "label": "Offered At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "accepted_at",
+   "fieldtype": "Datetime",
+   "label": "Accepted At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "picked_at",
+   "fieldtype": "Datetime",
+   "label": "Picked Up At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivered_at",
+   "fieldtype": "Datetime",
+   "label": "Delivered At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_proof",
+   "fieldtype": "Section Break",
+   "label": "Proof & Cash"
+  },
+  {
+   "fieldname": "otp_verified",
+   "fieldtype": "Check",
+   "label": "Delivery Code Verified",
+   "read_only": 1
+  },
+  {
+   "fieldname": "proof_photo",
+   "fieldtype": "Attach Image",
+   "label": "Proof Photo"
+  },
+  {
+   "fieldname": "reject_reason",
+   "fieldtype": "Small Text",
+   "label": "Reject Reason"
+  },
+  {
+   "fieldname": "column_break_p",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "distance_km",
+   "fieldtype": "Float",
+   "label": "Distance (km)",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivery_minutes",
+   "fieldtype": "Float",
+   "label": "Minutes Placed \u2192 Delivered",
+   "precision": "1",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cash_collected",
+   "fieldtype": "Currency",
+   "label": "Cash Collected",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_entry",
+   "fieldtype": "Link",
+   "label": "Payment Entry",
+   "options": "Payment Entry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "handed_over",
+   "fieldtype": "Check",
+   "label": "Cash Handed Over",
+   "read_only": 1
+  },
+  {
+   "fieldname": "handover_entry",
+   "fieldtype": "Link",
+   "label": "Handover Entry",
+   "options": "Journal Entry",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  },
+  {
+   "role": "Stock User",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "row_format": "Dynamic",
+ "actions": [],
+ "links": [],
+ "autoname": "format:DA-{YY}-{#####}"
+}

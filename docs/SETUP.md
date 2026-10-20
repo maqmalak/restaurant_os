@@ -28,3 +28,7 @@ Notes
 - The bench Redis (11000 / 13000) must be running (`redis_cache` / `redis_queue` in the Procfile).
 - Do not run `bench schedule` without checking: it runs every site's scheduled jobs on this shared bench.
 - Type-check: `cd apps/restaurant_os/frontend/apps/pos && ./node_modules/.bin/tsc --noEmit`.
+- Riders sign in at http://restaurant.localhost:5181/ros/rider (demo riders rider1–3@saffrongrill.example, password in
+  ~/.restaurant-site-secrets). Phones need **HTTPS** for GPS (browsers allow geolocation only on secure origins and localhost).
+- Maps use OpenStreetMap tiles loaded by the browser; switch to a paid tile / Google Maps key for production traffic.
+

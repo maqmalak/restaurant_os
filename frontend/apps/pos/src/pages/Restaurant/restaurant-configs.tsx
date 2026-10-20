@@ -1,4 +1,4 @@
-import { Banknote, ChefHat, ClipboardList, Trash2, LayoutGrid, MapPin, Plug, Receipt, Settings2, SlidersVertical, Store, UtensilsCrossed } from "lucide-react";
+import { Banknote, Bike, ChefHat, ClipboardList, Trash2, LayoutGrid, MapPin, Plug, Receipt, Settings2, SlidersVertical, Store, UtensilsCrossed } from "lucide-react";
 import type { DocConfig } from "@/components/doc/doc-config";
 import { sec, colBreak, tab, data, int, float, check, text, link, select, req, ro, nameCol, textCol, numCol, yesNoCol, statusCol, currency, percent, dateTimeCol, moneyCol, datetime } from "@/components/doc/doc-helpers";
 
@@ -316,4 +316,37 @@ export const WASTAGE_CONFIG: DocConfig = {
   titleOf: (v) => (v.name ? `${v.name} · ${v.reason ?? ""}` : "New Wastage Log"),
 };
 
-export const RESTAURANT_CONFIGS = [ORDER_CONFIG, WASTAGE_CONFIG, BRANCH_CONFIG, STATION_CONFIG, TABLE_CONFIG, FLOOR_AREA_CONFIG, MODIFIER_GROUP_CONFIG, SETTINGS_CONFIG];
+export const RIDER_CONFIG: DocConfig = {
+  doctype: "Rider",
+  base: "/restaurant/riders",
+  singular: "Rider",
+  plural: "Riders",
+  subtitle: "Delivery riders — an employee with a login for the rider app",
+  icon: Bike,
+  listFields: ["name", "rider_name", "branch", "phone", "vehicle", "status", "cash_in_hand", "last_seen", "disabled", "modified"],
+  columns: [nameCol("Rider", (r) => r.rider_name), textCol("branch", "Branch"), textCol("phone", "Phone"), textCol("vehicle", "Vehicle"),
+    moneyCol("cash_in_hand", "Cash in Hand"), dateTimeCol("last_seen", "Last Seen"), statusCol("status", "Status", "Off Duty")],
+  searchFields: ["rider_name", "phone"],
+  statusField: "status",
+  statuses: ["Available", "On Delivery", "Off Duty"],
+  fields: [
+    sec("Rider"),
+    req(data("rider_name", "Rider Name")),
+    link("employee", "Employee", "Employee"),
+    link("user", "Login (User)", "User"),
+    data("phone", "Phone"),
+    colBreak(),
+    req(link("branch", "Branch", "Restaurant Branch")),
+    select("vehicle", "Vehicle", ["Motorbike", "Bicycle", "Car", "On Foot"]),
+    data("vehicle_number", "Vehicle Number"),
+    check("disabled", "Disabled"),
+    sec("Live"),
+    ro(data("status", "Status")), ro(datetime("last_seen", "Last Seen")),
+    colBreak(),
+    ro(float("latitude", "Latitude")), ro(float("longitude", "Longitude")), ro(currency("cash_in_hand", "Cash in Hand")),
+  ],
+  defaults: () => ({ vehicle: "Motorbike", branch: "Gulberg" }),
+  titleOf: (v) => v.rider_name || "New Rider",
+};
+
+export const RESTAURANT_CONFIGS = [ORDER_CONFIG, WASTAGE_CONFIG, RIDER_CONFIG, BRANCH_CONFIG, STATION_CONFIG, TABLE_CONFIG, FLOOR_AREA_CONFIG, MODIFIER_GROUP_CONFIG, SETTINGS_CONFIG];

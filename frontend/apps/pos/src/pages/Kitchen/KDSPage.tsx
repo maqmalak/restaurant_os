@@ -15,7 +15,7 @@ interface Line { row: string; item_code: string; item_name: string; qty: number;
   status: "Queued" | "Preparing" | "Ready" | "Served" | "Void"; round: number; station?: string; station_name?: string; image?: string }
 interface Card { name: string; order_no: string; status: string; column: Column; channel: string; order_type: string; table?: string;
   table_label?: string; guests?: number; customer_name?: string; notes?: string; created: string; updated: string; progress: number;
-  latest_round: number; items: Line[]; invoice?: string; stock_status?: string }
+  latest_round: number; items: Line[]; invoice?: string; stock_status?: string; rider_name?: string; delivery_by?: string }
 interface Board { branch: string; branches: string[]; stations: { name: string; station_name: string; color?: string }[];
   settings: { amber: number; red: number; sound: number }; now: string; cards: Card[]; counts: Record<Column, number>;
   all_day: { item: string; qty: number }[] }
@@ -286,7 +286,12 @@ function TicketCard({ card: c, now, amber, red, busy, onAdvance, onBump, onRecal
         {older.map(line)}
       </div>
       {c.notes && <div className="mx-3 mb-2 rounded-md bg-red-50 px-2 py-1.5 text-xs font-semibold text-red-700 dark:bg-red-500/15 dark:text-red-300">{c.notes}</div>}
-      {c.invoice && c.order_type === "Delivery" && <div className="mx-3 mb-2 text-[11px] text-neutral-500">Invoice {c.invoice}</div>}
+      {c.order_type === "Delivery" && (
+        <div className="mx-3 mb-2 flex items-center gap-1.5 text-[11px] text-neutral-500">
+          <Bike className="h-3.5 w-3.5" />{c.rider_name ? c.rider_name : c.delivery_by === "Foodpanda Rider" ? "Foodpanda rider" : "Waiting for a rider"}
+          {c.invoice && <span className="ml-auto">{c.invoice}</span>}
+        </div>
+      )}
       <div className={cn("flex items-center gap-2 px-3 py-2", dispatch ? "bg-sky-700 text-white hover:bg-sky-600" : FOOT[c.column])}>
         <button onClick={() => printHtml(ticketHtml(c))} className="rounded-full bg-white/90 p-1.5 text-neutral-900" title="Print ticket"><Printer className="h-4 w-4" /></button>
         <button disabled={(!open && !dispatch) || busy === c.name} onClick={onAdvance} title={dispatch ? nextDispatch(c) : NEXT[c.column]}

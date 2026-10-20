@@ -41,6 +41,7 @@ def _card(o, rows, station, images, station_names):
 		"guests": o.guests, "customer_name": o.customer_name, "notes": o.notes, "priority": o.priority, "invoice": o.invoice,
 		"created": str(o.placed_at or o.creation), "updated": str(o.modified), "grand_total": o.grand_total,
 		"progress": round(done / len(lines) * 100), "latest_round": latest, "stock_status": o.stock_status,
+		"delivery_by": o.get("delivery_by"), "rider_name": (frappe.get_cached_value("Rider", o.rider, "rider_name") if o.get("rider") else None) or o.get("ext_rider_name"),
 		"items": [{"row": r.name, "item_code": r.item_code, "item_name": r.item_name, "qty": r.qty, "uom": r.uom, "notes": r.notes,
 				   "modifiers": r.modifiers, "status": r.kds_status, "round": int(r.kitchen_round or 1), "station": r.station,
 				   "station_name": station_names.get(r.station), "image": images.get(r.item_code)} for r in sorted(lines, key=lambda r: r.idx)],

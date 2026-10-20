@@ -8,6 +8,11 @@ from frappe.utils import flt
 
 
 class RestaurantOrder(Document):
+	def before_insert(self):
+		from restaurant_os.services.riders import prepare
+
+		prepare(self)                                         # delivery: tracking link, delivery code, who delivers, distance
+
 	def validate(self):
 		if not self.items:
 			frappe.throw(_("An order needs at least one item."))
@@ -21,6 +26,11 @@ class RestaurantOrder(Document):
 			self.grand_total = sum(flt(r.amount) for r in self.items)
 
 	def on_update(self):
+		if self.flags.ros_assign:
+			self.flags.ros_assign = False
+			from restaurant_os.services.orders import enqueue
+
+			enqueue("restaurant_os.services.riders.auto_assign", order=self.name)
 		if self.flags.ros_deduct:
 			self.flags.ros_deduct = False
 			from restaurant_os.services.orders import enqueue

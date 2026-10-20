@@ -8,6 +8,7 @@ export const DOC_ROUTES: Record<string, string> = {
   "Sales Invoice": "/pos/sales/",
   "Restaurant Order": "/restaurant/orders/",
   "Wastage Log": "/restaurant/wastage/",
+  "Rider": "/restaurant/riders/",
   "POS Opening Shift": "/pos/openings/",
   "POS Closing Shift": "/pos/closings/",
   "POS Cash Movement": "/pos/cash-movements/",

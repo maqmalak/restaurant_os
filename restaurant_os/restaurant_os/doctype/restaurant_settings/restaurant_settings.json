@@ -49,11 +49,15 @@
   "section_delivery",
   "rider_assignment",
   "rider_ping_seconds",
+  "require_delivery_otp",
+  "rider_float_account",
+  "avg_rider_speed_kmh",
   "column_break_c",
   "review_delay_minutes",
   "low_rating_alert",
   "section_foodpanda",
   "aggregator_mode",
+  "foodpanda_delivery_by",
   "aggregator_customer",
   "foodpanda_base_url",
   "foodpanda_chain_code",
@@ -295,6 +299,26 @@
    "default": "15"
   },
   {
+   "fieldname": "require_delivery_otp",
+   "fieldtype": "Check",
+   "label": "Rider Must Enter the Delivery Code",
+   "description": "Else a photo or the code is proof of delivery"
+  },
+  {
+   "fieldname": "rider_float_account",
+   "fieldtype": "Link",
+   "label": "Rider Cash Account",
+   "options": "Account",
+   "description": "Cash riders collect, until handed over at the counter"
+  },
+  {
+   "fieldname": "avg_rider_speed_kmh",
+   "fieldtype": "Float",
+   "label": "Average Rider Speed (km/h)",
+   "default": "20",
+   "description": "For the customer's ETA"
+  },
+  {
    "fieldname": "column_break_c",
    "fieldtype": "Column Break"
   },
@@ -323,6 +347,14 @@
    "options": "Mock\nLive",
    "default": "Mock",
    "description": "Mock: orders come from the built-in simulator, nothing leaves this server"
+  },
+  {
+   "fieldname": "foodpanda_delivery_by",
+   "fieldtype": "Select",
+   "label": "Foodpanda Orders Delivered By",
+   "options": "Foodpanda Rider\nOwn Rider",
+   "default": "Foodpanda Rider",
+   "description": "Foodpanda's rider (tracked from Foodpanda) or your own riders (restaurant delivery mode)"
   },
   {
    "fieldname": "aggregator_customer",

@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Armchair, Scale, Trash2, Award, BadgePercent, ClipboardList, MonitorPlay, ReceiptText, Banknote, ChefHat, DoorClosed, DoorOpen, LayoutDashboard, LayoutGrid, PackagePlus, Settings2, ShoppingCart,
+  Armchair, Bike, Map, Scale, Trash2, Award, BadgePercent, ClipboardList, MonitorPlay, ReceiptText, Banknote, ChefHat, DoorClosed, DoorOpen, LayoutDashboard, LayoutGrid, PackagePlus, Settings2, ShoppingCart,
   SlidersHorizontal, SlidersVertical, Store, Ticket, UtensilsCrossed, Wallet,
 } from "lucide-react";
 
@@ -26,6 +26,7 @@ export const POS_NAVIGATION: NavGroup[] = [
       { label: "POS Terminal", to: "/pos/terminal", icon: Store },
       { label: "Table Map", to: "/pos/tables", icon: Armchair },
       { label: "Kitchen Display", to: "/kds", icon: MonitorPlay },
+      { label: "Dispatch & Riders", to: "/dispatch", icon: Map },
       { label: "Cash In / Out", to: "/pos/cash", icon: Wallet },
       { label: "Receive Stock", to: "/pos/stock", icon: PackagePlus },
       { label: "POS Invoices", to: "/pos/invoices", icon: ShoppingCart },
@@ -50,6 +51,7 @@ export const POS_NAVIGATION: NavGroup[] = [
       { label: "Orders", to: "/restaurant/orders", icon: ClipboardList },
       { label: "Wastage", to: "/restaurant/wastage", icon: Trash2 },
       { label: "Ingredient Variance", to: "/restaurant/variance", icon: Scale },
+      { label: "Riders", to: "/restaurant/riders", icon: Bike },
       { label: "Branches", to: "/restaurant/branches", icon: Store },
       { label: "Kitchen Stations", to: "/restaurant/stations", icon: ChefHat },
       { label: "Tables", to: "/restaurant/tables", icon: UtensilsCrossed },
@@ -76,6 +78,8 @@ const ROUTE_TITLES: Record<string, string> = {
   new: "New",
   restaurant: "Restaurant",
   orders: "Orders",
+  dispatch: "Dispatch & Riders",
+  riders: "Riders",
   wastage: "Wastage",
   variance: "Ingredient Variance",
   sales: "Sales Invoices",

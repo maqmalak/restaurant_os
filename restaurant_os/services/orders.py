@@ -55,6 +55,12 @@ def set_status(order, status, save=True):
 	publish(order)
 	if status in STOCK_AT and settings().stock_deduction_moment == "On Order Completion":
 		order.flags.ros_deduct = True                         # RestaurantOrder.on_update runs it once the order is saved
+	if order.order_type == "Delivery":
+		from restaurant_os.services import riders
+
+		if status == "Ready" and riders.offer_due(order):
+			order.flags.ros_assign = True                     # offered to a rider once saved (on_update)
+		riders.aggregator_rider_update(order)
 	return order
 
 
@@ -72,7 +78,7 @@ def refresh_status(order):
 
 
 def create_order(branch, items, channel="POS", order_type=None, customer=None, customer_name=None, table=None, notes=None,
-				 invoice_doctype=None, invoice=None, grand_total=0, external_order_id=None, client_order_uuid=None, priority=0):
+				 invoice_doctype=None, invoice=None, grand_total=0, external_order_id=None, client_order_uuid=None, priority=0, delivery=None):
 	"""A Restaurant Order from any channel, accepted straight away, its lines routed to the branch's kitchen stations."""
 	from restaurant_os.restaurant_os.doctype.kitchen_station.kitchen_station import station_for_item
 
@@ -87,7 +93,7 @@ def create_order(branch, items, channel="POS", order_type=None, customer=None, c
 		"customer_name": customer_name or customer, "table": table, "notes": notes, "invoice_doctype": invoice_doctype,
 		"invoice": invoice, "grand_total": grand_total, "external_order_id": external_order_id,
 		"client_order_uuid": client_order_uuid, "priority": priority, "order_no": _next_order_no(branch),
-		"status": "Placed", "placed_at": now_datetime(),
+		"status": "Placed", "placed_at": now_datetime(), **(delivery or {}),
 	})
 	for it in items:
 		station = it.get("station") or station_for_item(branch, it["item_code"])

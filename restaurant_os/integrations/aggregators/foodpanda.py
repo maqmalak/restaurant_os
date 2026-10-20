@@ -36,10 +36,13 @@ class FoodpandaAdapter(AggregatorAdapter):
 				frappe.throw(_("Foodpanda product {0} is not mapped to an item.").format(code))
 			items.append({"item_code": code, "qty": float(p.get("quantity") or 1), "rate": float(p.get("unit_price") or 0),
 						  "notes": p.get("comment")})
+		addr = payload.get("address") or {}
 		return {"external_order_id": str(payload.get("order_id") or payload.get("code")), "branch": payload.get("branch"),
 				"order_type": "Delivery" if (payload.get("expedition_type") or "delivery") == "delivery" else "Pickup",
 				"customer_name": (payload.get("customer") or {}).get("name") or "Foodpanda customer",
-				"notes": payload.get("comment"), "items": items}
+				"notes": payload.get("comment"), "items": items,
+				"delivery": {"delivery_address": addr.get("text"), "delivery_lat": addr.get("latitude"), "delivery_lng": addr.get("longitude"),
+							 "delivery_phone": (payload.get("customer") or {}).get("phone"), "cod_amount": 0}}
 
 	def push_status(self, order):
 		log(self.service, {"order_id": order.external_order_id, "status": order.status, "mode": self.settings.aggregator_mode},
@@ -65,11 +68,7 @@ def receive(payload):
 	branch = data.pop("branch", None) or settings().default_branch
 	order = create_order(branch, data.pop("items"), channel="Foodpanda", client_order_uuid=f"foodpanda:{data['external_order_id']}", **data)
 	log("Foodpanda", payload, reference=("Restaurant Order", order.name))
-	from restaurant_os.services.delivery import invoice_quietly
-
-	if invoice_quietly(order.name):                           # accepted → invoiced to Foodpanda (it collects from the diner)
-		order.reload()
-	return order
+	return order                                              # invoiced to Foodpanda when delivered (services.delivery)
 
 
 def simulate_order(items=2):
@@ -78,6 +77,9 @@ def simulate_order(items=2):
 	if not menu:
 		frappe.throw(_("No items on the Foodpanda price list."))
 	picks = random.sample(menu, min(int(items), len(menu)))
-	return receive({"order_id": f"FP-{uuid.uuid4().hex[:8].upper()}", "expedition_type": "delivery",
-					"customer": {"name": random.choice(["Hira S.", "Usman A.", "Zara K.", "Ali R."])},
+	from restaurant_os.api.riders import random_drop
+
+	addr = random_drop(frappe.db.get_single_value("Restaurant Settings", "default_branch"))
+	return receive({"order_id": f"FP-{uuid.uuid4().hex[:8].upper()}", "expedition_type": "delivery", "address": addr,
+					"customer": {"name": random.choice(["Hira S.", "Usman A.", "Zara K.", "Ali R."]), "phone": f"+92 321 {random.randint(1000000, 9999999)}"},
 					"products": [{"remote_code": p.item_code, "quantity": random.choice([1, 1, 2]), "unit_price": p.price_list_rate} for p in picks]})

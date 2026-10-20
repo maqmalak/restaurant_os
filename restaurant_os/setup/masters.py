@@ -10,7 +10,7 @@ import os
 import secrets
 
 import frappe
-from frappe.utils import add_days, add_months, getdate, nowdate
+from frappe.utils import add_days, add_months, flt, getdate, nowdate
 
 COMPANY = "Saffron Grill"
 ABBR = "SGR"
@@ -69,7 +69,8 @@ def ensure_accounts():
 			mop.append("accounts", {"company": COMPANY, "default_account": account})
 		mop.enabled = 1
 		mop.save(ignore_permissions=True)
-	return {"card": card, "back_office": back, "bank": bank}
+	rider = _account("Rider Cash", "Cash In Hand", "Cash")       # cash on delivery until the rider hands it over
+	return {"card": card, "back_office": back, "bank": bank, "rider": rider}
 
 
 def _warehouse(name, parent=None):
@@ -157,6 +158,36 @@ def ensure_users():
 	return [u[0] for u in USERS]
 
 
+RIDERS = [("rider1@saffrongrill.example", "Imran", "Ali", "Motorbike", "LEA-1234"),
+		  ("rider2@saffrongrill.example", "Zubair", "Khan", "Motorbike", "LEB-5678"),
+		  ("rider3@saffrongrill.example", "Shahid", "Iqbal", "Bicycle", "")]
+
+
+def ensure_riders(branch):
+	"""Demo riders: an Employee and a login (role Delivery Rider) each, parked near the branch."""
+	from frappe.utils.password import update_password
+
+	if not frappe.db.exists("Role", "Delivery Rider"):
+		frappe.get_doc({"doctype": "Role", "role_name": "Delivery Rider", "desk_access": 0}).insert(ignore_permissions=True)
+	pwd = _password()
+	blat, blng = frappe.db.get_value("Restaurant Branch", branch, ["latitude", "longitude"])
+	for i, (email, first, last, vehicle, plate) in enumerate(RIDERS):
+		if not frappe.db.exists("User", email):
+			frappe.get_doc({"doctype": "User", "email": email, "first_name": first, "last_name": last, "send_welcome_email": 0,
+							"user_type": "System User", "roles": [{"role": "Delivery Rider"}]}).insert(ignore_permissions=True)
+			update_password(email, pwd)
+		if frappe.db.exists("Rider", {"user": email}):
+			continue
+		employee = frappe.db.get_value("Employee", {"user_id": email}, "name")
+		if not employee and frappe.db.exists("DocType", "Employee"):
+			employee = frappe.get_doc({"doctype": "Employee", "first_name": first, "last_name": last, "gender": "Male",
+									   "date_of_birth": "1995-01-15", "date_of_joining": "2025-01-01", "company": COMPANY,
+									   "status": "Active", "user_id": email, "designation": None}).insert(ignore_permissions=True).name
+		frappe.get_doc({"doctype": "Rider", "rider_name": f"{first} {last}", "employee": employee, "user": email, "branch": branch,
+						"phone": f"+92 300 55500{i + 1:02d}", "vehicle": vehicle, "vehicle_number": plate, "status": "Off Duty",
+						"latitude": flt(blat) + 0.003 * (i + 1), "longitude": flt(blng) - 0.002 * (i + 1)}).insert(ignore_permissions=True)
+
+
 def ensure_pos_profile(kitchen, cost_center, accounts, users):
 	doc = frappe.get_doc("POS Profile", PROFILE) if frappe.db.exists("POS Profile", PROFILE) else frappe.new_doc("POS Profile")
 	if doc.is_new():
@@ -218,6 +249,9 @@ def ensure_settings(branch, accounts):
 				  "run_jobs_inline": 1, "aggregator_mode": "Mock", "messaging_mode": "Mock", "kds_sound": 1})
 	if not frappe.db.sql("select 1 from tabSingles where doctype = 'Restaurant Settings' and field = 'block_sold_out'"):
 		s.block_sold_out = 1                                  # settings from before this option: switch it on
+	if not s.rider_float_account:
+		s.update({"rider_float_account": accounts["rider"], "avg_rider_speed_kmh": s.avg_rider_speed_kmh or 20,
+				  "foodpanda_delivery_by": s.foodpanda_delivery_by or "Foodpanda Rider"})
 	if not s.aggregator_customer:
 		if not frappe.db.exists("Customer", "Foodpanda"):
 			frappe.get_doc({"doctype": "Customer", "customer_name": "Foodpanda", "customer_type": "Company",
@@ -250,6 +284,7 @@ def run():
 	ensure_pos_profile(kitchen, cost_center, accounts, users)
 	branch = ensure_branch(store, kitchen, cost_center)
 	ensure_settings(branch, accounts)
+	ensure_riders(branch)
 	ensure_stock_settings()
 	frappe.db.commit()
 	print(f"ros-setup: {COMPANY} ({ABBR}), branch {branch}, counter {PROFILE}, warehouses {store} → {kitchen}")

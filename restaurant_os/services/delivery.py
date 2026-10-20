@@ -3,11 +3,11 @@
 Kitchen: … → Ready → Picked Up (food leaves; ingredients are deducted) → Out for Delivery (own riders) → Delivered.
 Foodpanda's rider collects and Foodpanda collects the money, so a Foodpanda order goes Picked Up → Delivered.
 
-Invoice: an aggregator order is invoiced when it is accepted — to the aggregator customer (Restaurant Settings → Invoice
-Foodpanda Orders To) at the Foodpanda price list: a receivable from Foodpanda, settled by its payout. An own delivery
-(cash on delivery) is invoiced when delivered, to the order's customer; the rider's cash is then received at the counter
-(POS → Receive payment, which allocates it to this invoice). Both are Sales Invoices outside the cashier's shift and are
-reported to FBR.
+Invoice (owner's choice, 2026-10-21): every delivery order is invoiced when it is Delivered. An aggregator order goes to
+the aggregator customer (Restaurant Settings → Invoice Foodpanda Orders To) at the Foodpanda price list — a receivable from
+Foodpanda, settled by its payout; an order cancelled before delivery never reaches the books. An own delivery (cash on
+delivery) goes to the order's customer; the rider's cash is then received at the counter (POS → Receive payment, which
+allocates it to this invoice). Both are Sales Invoices outside the cashier's shift and are reported to FBR.
 """
 
 import frappe

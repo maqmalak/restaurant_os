@@ -23,6 +23,7 @@ scheduler_events = {
 	# after ERPNext's daily reorder job: pending purchase requests → draft POs per preferred supplier
 	"daily_long": ["restaurant_os.services.procurement.daily"],
 	"hourly": ["restaurant_os.services.stock_deduction.retry_failed", "restaurant_os.integrations.tax_authority.fbr.retry_failed"],
+	"daily": ["restaurant_os.services.riders.purge_locations"],
 }
 
 _INVOICE_EVENTS = {

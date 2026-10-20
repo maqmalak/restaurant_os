@@ -58,7 +58,15 @@ recipe dishes. Script report **Ingredient Variance** (branch, from_date, to_date
 Delivery: `kds.advance` continues Picked Up → Out for Delivery → Delivered (Foodpanda: Picked Up → Delivered);
 `services.delivery.invoice_for_order` (Foodpanda on accept, own delivery at Delivered).
 
+## Riders & tracking — `restaurant_os.api.riders`
+
+Rider app (signed-in rider): `me`, `set_duty(on)`, `accept(assignment)`, `reject(assignment, reason?)`, `pickup(assignment)`,
+`deliver(assignment, otp?, photo?, cash?)`, `location(lat, lng, accuracy?, speed?)`.
+Dispatch (staff): `dispatch(branch?)`, `assign(order, rider)`, `handover(rider, amount?)`, `new_delivery_order(data JSON)`,
+`simulate_delivery_order(branch?)`. Customer (guest, rate-limited): `track(key)`.
+
 ## Realtime events
 
 `ros_kds` {event, order, branch, status} — any order change (KDS and table map refresh); `ros_tables` {table, branch};
-`ros_availability` {branch, sold_out, changed} — a dish sold out / back.
+`ros_availability` {branch, sold_out, changed} — a dish sold out / back; `ros_dispatch` {event, order, branch, rider};
+`ros_rider` {event, order} (to the rider's user); `ros_rider_location` {rider, branch, lat, lng, status}.
