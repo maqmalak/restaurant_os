@@ -1163,6 +1163,23 @@ def counter_stock(pos_profile: str, q: str | None = None) -> dict:
 
 
 @frappe.whitelist()
+def stock_items(pos_profile: str, q: str) -> dict:
+	"""Stock items to receive (ingredients, bottled drinks…) matching `q`, with what the counter's warehouse holds.
+	(ERPNext's POS item search only lists the menu's sellable items, so raw ingredients could not be received.)"""
+	_guard(pos_profile)
+	wh = frappe.get_cached_value("POS Profile", pos_profile, "warehouse")
+	like = f"%{(q or '').strip()}%"
+	rows = frappe.db.sql("""select i.name as item_code, i.item_name, i.stock_uom, ifnull(b.actual_qty, 0) as actual_qty,
+			ifnull(nullif(b.valuation_rate, 0), i.valuation_rate) as price_list_rate
+		from tabItem i left join tabBin b on b.item_code = i.name and b.warehouse = %(w)s
+		where i.disabled = 0 and i.is_stock_item = 1 and (i.name like %(q)s or i.item_name like %(q)s or i.name in
+			(select parent from `tabItem Barcode` where barcode = %(b)s))
+		order by (i.item_name like %(p)s) desc, i.item_name limit 12""",
+		{"w": wh, "q": like, "b": (q or "").strip(), "p": f"{(q or '').strip()}%"}, as_dict=True)
+	return {"items": rows}
+
+
+@frappe.whitelist()
 def source_stock(warehouse: str, item_codes: str) -> dict:
 	"""Available qty of the chosen items in a source warehouse (for transfers)."""
 	_guard()

@@ -130,8 +130,9 @@ function ReceiveForm({ profile, setup, money, lowItems, onDone }: {
   const [debounced, setDebounced] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => { const t = setTimeout(() => setDebounced(term.trim()), 220); return () => clearTimeout(t); }, [term]);
-  const { data: itemData } = useFrappeGetCall<{ message: { items: Item[] } }>("erpnext.selling.page.point_of_sale.point_of_sale.get_items",
-    debounced ? { start: 0, page_length: 12, price_list: profile.price_list, item_group: "", pos_profile: profile.name, search_term: debounced } : undefined,
+  // stock items (ingredients too) — ERPNext's POS search only knows the menu's sellable items
+  const { data: itemData } = useFrappeGetCall<{ message: { items: Item[] } }>("restaurant_os.api.pos.stock_items",
+    debounced ? { pos_profile: profile.name, q: debounced } : undefined,
     debounced ? `pos.stock.search.${profile.name}.${debounced}` : null);
   const results = itemData?.message?.items ?? [];
   const codes = useMemo(() => lines.map((l) => l.item_code), [lines]);

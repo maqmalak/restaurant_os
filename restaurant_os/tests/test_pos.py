@@ -700,3 +700,9 @@ class TestRestaurantPOS(IntegrationTestCase):
 		finally:
 			frappe.set_user("Administrator")
 			frappe.db.rollback(save_point="cashier_close")
+
+	def test_receive_stock_search_finds_ingredients(self):
+		"""Receive stock must find raw ingredients, not only the menu's sellable items."""
+		items = self._as("cashier@saffrongrill.example", pos.stock_items, PROFILE, "tomato")["items"]
+		self.assertIn("Tomato", [i.item_code for i in items])
+		self.assertNotIn("Chicken Karahi", [i.item_code for i in pos.stock_items(PROFILE, "karahi")["items"]], "recipe dishes aren't stock")
