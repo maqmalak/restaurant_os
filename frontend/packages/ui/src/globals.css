@@ -39,21 +39,21 @@
     /* Deep-navy / teal enterprise theme */
     --background: 25 20% 5%;
     --foreground: 38 35% 94%;
-    --card: 28 18% 9.5%;
+    --card: 28 16% 12.5%;
     --card-foreground: 38 35% 94%;
-    --popover: 28 20% 10%;
+    --popover: 28 18% 13%;
     --popover-foreground: 38 35% 94%;
     --primary: 200 72% 47%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 28 18% 13%;
+    --secondary: 28 15% 16%;
     --secondary-foreground: 38 25% 90%;
-    --muted: 28 16% 15%;
+    --muted: 28 14% 18%;
     --muted-foreground: 35 22% 76%;
-    --accent: 30 20% 15%;
+    --accent: 30 18% 18%;
     --accent-foreground: 38 25% 92%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 30 16% 22%;
+    --border: 30 14% 25%;
     --input: 32 14% 42%;
     --input-bg: 25 22% 6.5%; /* darker than cards so fields read as inset wells */
     --success: 142 60% 48%;
@@ -337,4 +337,17 @@
     box-shadow: 0 8px 22px -10px rgb(33 150 207 / 0.75);
   }
   button.bg-primary:hover, a.bg-primary:hover, .btn-azure:hover { filter: brightness(1.06); }
+}
+
+/* Summary / KPI cards: a lit surface with a soft top highlight (dark mode needs the lift); gradient icon tiles. */
+@layer components {
+  .kpi-card { background: hsl(var(--card)); box-shadow: 0 1px 2px rgb(30 20 10 / 0.05), 0 12px 30px -18px rgb(30 20 10 / 0.25); }
+  .dark .kpi-card {
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.065) 0%, rgb(255 255 255 / 0.02) 55%), hsl(var(--card));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 16px 40px -22px rgb(0 0 0 / 0.9);
+  }
+  .icon-tile {
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 2.75rem; height: 2.75rem; border-radius: 0.9rem;
+    color: #fff; box-shadow: 0 10px 22px -10px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.25);
+  }
 }

@@ -115,7 +115,7 @@ export default function POSDashboardPage() {
               const active = range.from === x.from && range.to === x.to;
               return (
                 <button key={x.key} type="button" onClick={() => setRange({ key: x.key, from: x.from, to: x.to })}
-                  className={cn("group relative overflow-hidden rounded-2xl border bg-card p-3.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md",
+                  className={cn("kpi-card group relative overflow-hidden rounded-2xl border p-3.5 text-left transition-all hover:-translate-y-0.5",
                     active ? "border-primary ring-2 ring-primary/25" : "border-border")}>
                   <div className="flex items-center justify-between"><span className="text-[11px] font-bold uppercase tracking-wider text-foreground/70">{x.label}</span><Delta value={delta} /></div>
                   <div className="mt-1.5 truncate text-xl font-extrabold tabular-nums">{money(x.net)}</div>
@@ -285,16 +285,21 @@ function Delta({ value, onDark }: { value: number | null; onDark?: boolean }) {
   return <span className={cn("inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums", cls)}><Icon className="h-3 w-3" />{flat ? "0%" : `${up ? "+" : ""}${value.toFixed(Math.abs(value) < 10 ? 1 : 0)}%`}</span>;
 }
 
+const TILE: Record<string, string> = {
+  Bills: "from-[#3092df] to-[#1bafb4]", "Avg basket": "from-[#f7cd7a] to-[#e08a2a]", Customers: "from-violet-400 to-indigo-600", "Items sold": "from-emerald-400 to-teal-600",
+  Discounts: "from-rose-400 to-pink-600", "On credit": "from-amber-400 to-orange-600", Coupons: "from-sky-400 to-blue-600", Loyalty: "from-fuchsia-400 to-purple-600",
+};
+
 function Stat({ icon: Icon, label, value, hint, delta, warn }: { icon: typeof Store; label: string; value: string; hint: string; delta?: number | null; warn?: boolean }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
+    <div className="kpi-card rounded-2xl border border-border p-3.5 transition-transform hover:-translate-y-0.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-3.5 w-3.5" /></span>
+        <span className={cn("icon-tile !h-9 !w-9 !rounded-xl bg-gradient-to-br", TILE[label] ?? "from-[#3092df] to-[#1bafb4]")}><Icon className="h-4 w-4" /></span>
         {delta !== undefined && <Delta value={delta} />}
       </div>
-      <div className="mt-2 text-[10px] font-bold uppercase tracking-wider text-foreground/65">{label}</div>
-      <div className={cn("truncate text-lg font-extrabold tabular-nums", warn && "text-rose-600 dark:text-rose-400")}>{value}</div>
-      <div className="truncate text-[10px] text-muted-foreground">{hint}</div>
+      <div className="mt-2.5 text-[10px] font-bold uppercase tracking-wider text-foreground/75">{label}</div>
+      <div className={cn("truncate text-xl font-extrabold tabular-nums", warn && "text-rose-600 dark:text-rose-400")}>{value}</div>
+      <div className="truncate text-[11px] text-muted-foreground">{hint}</div>
     </div>
   );
 }

@@ -183,11 +183,21 @@ export default function OwnerDashboardPage() {
   );
 }
 
+const OWNER_TILE: Record<string, string> = {
+  "Net sales today": "from-[#3092df] to-[#1bafb4]", Orders: "from-violet-400 to-indigo-600", "Avg ticket": "from-[#f7cd7a] to-[#e08a2a]", "Food cost": "from-rose-400 to-pink-600",
+  "Open orders": "from-sky-400 to-blue-600", "Ticket time": "from-emerald-400 to-teal-600", Tables: "from-fuchsia-400 to-purple-600", "Wastage today": "from-amber-400 to-orange-600",
+};
+
 function Tile({ icon: Icon, label, value, hint, delta, warn, big }: { icon: typeof Wallet; label: string; value: string; hint?: string; delta?: number | null; warn?: boolean; big?: boolean }) {
   return (
-    <div className={cn("rounded-xl border bg-card p-3 shadow-sm", warn ? "border-amber-500/50" : "border-border")}>
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"><Icon className="h-3.5 w-3.5" />{label}</div>
-      <div className={cn("mt-1 font-bold tabular-nums", big ? "text-2xl" : "text-xl")}>{value}</div>
+    <div className={cn("kpi-card rounded-2xl border p-3.5 transition-transform hover:-translate-y-0.5", warn ? "border-amber-500/50" : "border-border")}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-foreground/75">{label}</div>
+          <div className={cn("mt-1 font-extrabold tabular-nums", big ? "text-2xl" : "text-xl")}>{value}</div>
+        </div>
+        <span className={cn("icon-tile !h-10 !w-10 bg-gradient-to-br", warn ? "from-amber-400 to-orange-600" : OWNER_TILE[label] ?? "from-[#3092df] to-[#1bafb4]")}><Icon className="h-[18px] w-[18px]" /></span>
+      </div>
       <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
         {delta != null && (
           <span className={cn("inline-flex items-center font-semibold", delta >= 0 ? "text-green-600" : "text-red-600")}>

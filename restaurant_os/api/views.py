@@ -103,3 +103,52 @@ def stations() -> list:
 		l = ld.get(r.name, {})
 		r.queued, r.preparing, r.ready = l.get("Queued", 0), l.get("Preparing", 0), l.get("Ready", 0)
 	return rows
+
+
+INVOICE_DTS = ("POS Invoice", "Sales Invoice")
+
+
+@frappe.whitelist()
+def invoices(doctype: str, status: str | None = None, q: str | None = None, from_date: str | None = None, to_date: str | None = None,
+			 channel: str | None = None, start: int = 0, page_length: int = 40) -> dict:
+	"""Invoice list for the card view: rows (with payment modes and item count), totals and per-status counts for the
+	same filters (status excluded from the counts so every tab shows its own number)."""
+	if doctype not in INVOICE_DTS:
+		frappe.throw(_("Not an invoice list."))
+	_need(doctype)
+	t = f"`tab{doctype}`"
+	cond, vals = ["1=1"], {}
+	if doctype == "Sales Invoice" and channel:
+		cond.append("ifnull(i.ros_channel, '') = %(channel)s"); vals["channel"] = channel
+	if from_date:
+		cond.append("i.posting_date >= %(from)s"); vals["from"] = from_date
+	if to_date:
+		cond.append("i.posting_date <= %(to)s"); vals["to"] = to_date
+	if q:
+		cond.append("(i.name like %(q)s or i.customer_name like %(q)s or i.customer like %(q)s)"); vals["q"] = f"%{q.strip()}%"
+	base = " and ".join(cond)
+	counts = dict(frappe.db.sql(f"select i.status, count(*) from {t} i where {base} group by i.status", vals))
+	where = base + (" and i.status = %(status)s" if status else "")
+	if status:
+		vals["status"] = status
+	tot = frappe.db.sql(f"""select count(*), sum(if(i.docstatus = 1 and i.is_return = 0, ifnull(nullif(i.rounded_total, 0), i.grand_total), 0)),
+			sum(if(i.docstatus = 1, i.outstanding_amount, 0)), sum(if(i.docstatus = 1 and i.is_return = 1, -ifnull(nullif(i.rounded_total, 0), i.grand_total), 0)),
+			sum(if(i.docstatus = 1, i.total_taxes_and_charges, 0))
+		from {t} i where {where}""", vals)[0]
+	extra = ", i.ros_channel" if doctype == "Sales Invoice" and frappe.get_meta(doctype).has_field("ros_channel") else ""
+	fbr = ", i.fbr_status, i.fbr_invoice_number" if frappe.get_meta(doctype).has_field("fbr_status") else ""
+	rows = frappe.db.sql(f"""select i.name, i.customer, i.customer_name, i.posting_date, i.posting_time, i.status, i.docstatus, i.is_return,
+			ifnull(nullif(i.rounded_total, 0), i.grand_total) as total, i.outstanding_amount, i.pos_profile, i.owner, i.is_pos{extra}{fbr},
+			(select count(*) from `tab{doctype} Item` it where it.parent = i.name) as line_count,
+			(select group_concat(distinct p.mode_of_payment separator ', ') from `tabSales Invoice Payment` p where p.parent = i.name and p.amount != 0) as modes
+		from {t} i where {where} order by i.creation desc limit %(start)s, %(len)s""", {**vals, "start": cint(start), "len": min(cint(page_length) or 40, 200)}, as_dict=True)
+	users = {r.owner for r in rows}
+	names = dict(frappe.get_all("User", filters={"name": ["in", list(users) or [""]]}, fields=["name", "full_name"], as_list=True))
+	for r in rows:
+		r.posting_date = str(r.posting_date)
+		hh, _, rest = str(r.posting_time or "").partition(":")
+		r.posting_time = f"{int(hh):02d}:{rest[:2]}" if hh.isdigit() else ""
+		r.cashier = names.get(r.owner) or r.owner
+		r.total, r.outstanding_amount = flt(r.total), flt(r.outstanding_amount)
+	return {"rows": rows, "counts": counts, "total_count": cint(tot[0]),
+			"summary": {"sales": flt(tot[1]), "outstanding": flt(tot[2]), "returns": flt(tot[3]), "tax": flt(tot[4])}}

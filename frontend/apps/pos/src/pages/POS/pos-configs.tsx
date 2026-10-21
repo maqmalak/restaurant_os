@@ -1,3 +1,4 @@
+import { lazy } from "react";
 import { Link } from "react-router-dom";
 import { Award, BadgePercent, Banknote, CalendarClock, ClipboardList, Coins, DoorClosed, DoorOpen, Gift, ReceiptText, ShoppingCart, SlidersHorizontal, Store, Ticket, Undo2, Users } from "lucide-react";
 import type { ChildTableSpec, DocConfig } from "@/components/doc/doc-config";
@@ -7,6 +8,9 @@ import {
 } from "@/components/doc/doc-helpers";
 import { todayISO, nowERPDateTime } from "@/utils/dates";
 import { asNumber } from "@/utils/cn";
+
+// the card-style list for POS / Sales Invoices (lazy)
+const InvoiceListPage = lazy(() => import("./InvoiceListPage").then((m) => ({ default: m.InvoiceListPage })));
 
 /* ============================================================================ POS sales (Sales Invoice, is_pos — POS Awesome default) */
 
@@ -55,6 +59,7 @@ function invoiceConfig(dt: "POS Invoice" | "Sales Invoice"): DocConfig {
   baseFilters: [],
   ...(isPI ? {} : { filters: [{ field: "ros_channel", label: "Channel", options: ["POS", "Web", "App", "Phone", "Foodpanda", "Kiosk"] }] }),
   icon: ShoppingCart,
+  listPage: InvoiceListPage,
   listHeaderExtra: (
     <Link to="/pos/terminal"
       className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90">
