@@ -68,21 +68,33 @@ export function LoginPage() {
             <div className="absolute left-[6%] right-[2%] top-[4%]">
               <div className="rounded-[18px] border border-white/10 bg-gradient-to-b from-[#2a2622] to-[#161311] p-[1.4%] shadow-[0_50px_100px_-40px_rgba(0,0,0,.95),inset_0_1px_0_rgba(255,255,255,.08)]">
                 <div className="overflow-hidden rounded-[10px] bg-black ring-1 ring-black/60">
-                  <img src={shot("terminal-clean")} alt="MicroMax POS terminal" className="block aspect-[16/10] w-full object-cover object-top" />
+                  <img src={shot("terminal-clean")} alt="MicroMax POS terminal" className="block aspect-[16/10] w-full object-cover object-top [filter:brightness(1.06)_saturate(1.1)]" />
                 </div>
               </div>
               <div className="mx-auto h-[5%] min-h-[14px] w-[16%] bg-gradient-to-b from-[#2a2622] to-[#1a1714]" />
               <div className="mx-auto h-[8px] w-[34%] rounded-full bg-gradient-to-b from-[#2f2a25] to-[#191613] shadow-[0_18px_30px_-10px_rgba(0,0,0,.9)]" />
             </div>
             {/* phone */}
-            <div className="float absolute bottom-[3%] left-0 w-[21%]" style={{ animationDelay: ".6s" }}>
-              <div className="overflow-hidden rounded-[22px] border-[5px] border-[#1d1a17] bg-[#1d1a17] shadow-[0_35px_60px_-25px_rgba(0,0,0,.95)] ring-1 ring-white/10">
-                <img src={shot("order-phone")} alt="" className="block aspect-[9/17] w-full rounded-[16px] object-cover object-top" />
+            <div className="float absolute -bottom-[1%] -left-[3%] z-20 w-[25%]" style={{ animationDelay: ".6s" }}>
+              <div className="pointer-events-none absolute -inset-6 rounded-full bg-[#f5c46b]/25 blur-3xl" />
+              <div className="relative rounded-[30px] bg-gradient-to-b from-[#3a332c] to-[#15120f] p-[5px] shadow-[0_40px_70px_-25px_rgba(0,0,0,.95)] ring-1 ring-white/15">
+                <div className="sheen relative overflow-hidden rounded-[25px] bg-black">
+                  <img src={shot("phone-hi")} alt="Online ordering on a phone" className="block aspect-[9/17.5] w-full object-cover object-top [filter:brightness(1.08)_saturate(1.15)]" />
+                  <div className="glare pointer-events-none absolute inset-0" />
+                  <span className="absolute left-1/2 top-1.5 h-[14px] w-[30%] -translate-x-1/2 rounded-full bg-black" />
+                </div>
               </div>
             </div>
-            {/* customer display card */}
-            <div className="float absolute -right-[2%] bottom-[16%] w-[30%] overflow-hidden rounded-xl border border-white/10 shadow-[0_30px_60px_-25px_rgba(0,0,0,.95)]" style={{ animationDelay: "1.4s" }}>
-              <img src={shot("display")} alt="" className="block aspect-[16/10] w-full object-cover" />
+            {/* customer display */}
+            <div className="float absolute -right-[4%] bottom-[10%] z-20 w-[40%]" style={{ animationDelay: "1.4s" }}>
+              <div className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-[#e59a3a]/20 blur-3xl" />
+              <div className="relative rounded-[16px] bg-gradient-to-b from-[#3a332c] to-[#15120f] p-[5px] shadow-[0_40px_70px_-25px_rgba(0,0,0,.95)] ring-1 ring-white/15">
+                <div className="sheen relative overflow-hidden rounded-[11px] bg-black" style={{ animationDelay: "2s" }}>
+                  <img src={shot("display-hi")} alt="Customer display" className="block aspect-[16/10] w-full object-cover [filter:brightness(1.12)_saturate(1.15)]" />
+                  <div className="glare pointer-events-none absolute inset-0" />
+                </div>
+              </div>
+              <div className="absolute -top-3 left-4 rounded-full bg-gradient-to-r from-[#f7cd7a] to-[#e59a3a] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#1a1208] shadow-lg">Customer display</div>
             </div>
             {/* live chips */}
             <div className="glass float absolute left-[24%] top-0 rounded-2xl px-3.5 py-2.5 shadow-2xl" style={{ animationDelay: ".2s" }}>

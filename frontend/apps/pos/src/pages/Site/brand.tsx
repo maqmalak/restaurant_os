@@ -17,6 +17,11 @@ export const SITE_STYLE = `
 .mx .float { animation: mx-float 6s ease-in-out infinite; }
 .mx .reveal { opacity: 0; transform: translateY(24px); transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); }
 .mx .reveal.in { opacity: 1; transform: none; }
+@keyframes mx-sheen { 0%, 55% { transform: translateX(-130%) skewX(-18deg); } 100% { transform: translateX(230%) skewX(-18deg); } }
+.mx .sheen { position: relative; overflow: hidden; }
+.mx .sheen::after { content: ""; position: absolute; inset: 0; width: 45%; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.16), transparent); animation: mx-sheen 6.5s ease-in-out infinite; }
+.mx .glare { background: linear-gradient(135deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.04) 28%, transparent 45%); }
 @media (prefers-reduced-motion: reduce) { .mx * { animation: none !important; transition: none !important; } .mx .reveal { opacity: 1; transform: none; } }
 `;
 
