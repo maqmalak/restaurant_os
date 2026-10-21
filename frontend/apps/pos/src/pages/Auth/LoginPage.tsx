@@ -19,6 +19,7 @@ export function LoginPage() {
   const [show, setShow] = useState(false);
   const from = (location.state as { from?: string } | null)?.from || "/pos";
 
+  useEffect(() => { document.title = "Sign in · MicroMax POS"; }, []);
   useEffect(() => {
     if (!isLoading && isAuthenticated) navigate(from === "/login" ? "/pos" : from, { replace: true });
   }, [isAuthenticated, isLoading, navigate, from]);
@@ -40,17 +41,17 @@ export function LoginPage() {
     <div className="mx grid min-h-screen bg-background lg:grid-cols-[1.1fr_1fr]">
       <style>{SITE_STYLE}</style>
       {/* brand panel */}
-      <aside className="relative hidden overflow-hidden bg-[#0b0a09] p-12 text-[#f6efe4] lg:flex lg:flex-col">
+      <aside className="relative hidden min-h-screen flex-col justify-between gap-8 overflow-hidden bg-[#0b0a09] p-10 text-[#f6efe4] lg:flex xl:p-12">
         <div className="grain pointer-events-none absolute inset-0" />
         <div className="pointer-events-none absolute -left-40 -top-32 h-[36rem] w-[36rem] rounded-full bg-[#e59a3a]/[0.14] blur-[130px]" />
         <div className="pointer-events-none absolute -bottom-40 right-0 h-[30rem] w-[30rem] rounded-full bg-[#0d9488]/[0.12] blur-[130px]" />
         <Link to="/" className="relative w-fit"><MicroMaxLogo /></Link>
-        <div className="relative mt-auto max-w-lg">
+        <div className="relative max-w-lg">
           <div className="text-xs font-semibold uppercase tracking-[0.32em] text-[#f5c46b]/85">Welcome back</div>
           <h1 className="serif mt-4 text-5xl font-semibold leading-[1.05]">Your restaurant, <span className="gold-grad">ready when you are.</span></h1>
           <p className="mt-5 text-lg leading-relaxed text-white/60">Open the counter, watch the kitchen and follow every delivery — the moment you sign in.</p>
         </div>
-        <div className="relative mt-10">
+        <div className="relative [@media(max-height:760px)]:hidden">
           <div className="overflow-hidden rounded-2xl border border-white/10 shadow-[0_40px_90px_-35px_rgba(0,0,0,.9)] [transform:perspective(1600px)_rotateY(-8deg)_rotateX(4deg)]">
             <img src={shot("terminal")} alt="" className="block w-full" />
           </div>
@@ -59,7 +60,7 @@ export function LoginPage() {
               <div><div className="font-semibold text-white">Secure sign-in</div><div className="text-xs text-white/55">Roles & permissions by ERPNext</div></div></div>
           </div>
         </div>
-        <div className="relative mt-auto flex gap-6 pt-12 text-sm text-white/50">
+        <div className="relative flex gap-6 text-sm text-white/50">
           {["Counter & kitchen", "Online & riders", "Stock & reports"].map((t) => <span key={t} className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-[#f5c46b]" />{t}</span>)}
         </div>
       </aside>

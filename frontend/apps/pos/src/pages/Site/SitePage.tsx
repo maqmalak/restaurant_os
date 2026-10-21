@@ -71,7 +71,7 @@ export default function SitePage() {
     on(); window.addEventListener("scroll", on, { passive: true });
     const hash = window.location.hash.slice(1);                // e.g. /#demo from the sign-in page
     if (hash) setTimeout(() => go(hash), 300);
-    return () => window.removeEventListener("scroll", on);
+    return () => { window.removeEventListener("scroll", on); document.title = "MicroMax POS"; };
   }, []);
   const nav = [["features", "Features"], ["modules", "Modules"], ["pricing", "Pricing"], ["faq", "FAQ"]] as const;
 
