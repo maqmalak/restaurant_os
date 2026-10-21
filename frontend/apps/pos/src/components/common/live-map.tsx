@@ -42,7 +42,7 @@ export function LiveMap({ markers, lines = [], className, fitKey, onMapClick }: 
 
   useEffect(() => {
     if (!host.current || map.current) return;
-    const m = L.map(host.current, { zoomControl: true, attributionControl: true }).setView([31.52, 74.36], 13);
+    const m = L.map(host.current, { zoomControl: true, attributionControl: true }).setView([31.4067, 73.1135], 13);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(m);
     m.on("click", (e: L.LeafletMouseEvent) => clickRef.current?.(e.latlng.lat, e.latlng.lng));
     layer.current = L.layerGroup().addTo(m);

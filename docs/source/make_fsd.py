@@ -204,7 +204,7 @@ text(s, Inches(0.8), Inches(3.0), Inches(11.5), Inches(1.0), "Automate the resta
 	 size=20, color=RGBColor(0xD1, 0xFA, 0xF5))
 text(s, Inches(0.8), Inches(4.5), Inches(11.5), Inches(0.9), "Includes Data Flow Diagrams — Level 0 (context) and Level 1",
 	 size=16, bold=True, color=WHITE)
-text(s, Inches(0.8), Inches(6.2), Inches(8), Inches(0.9), "Version 1.0  ·  21 October 2026\nDemo company: Saffron Grill (SGR) · Main branch: Gulberg, Lahore",
+text(s, Inches(0.8), Inches(6.2), Inches(8), Inches(0.9), "Version 1.0  ·  21 October 2026\nDemo company: Saffron Grill (SGR) · Main branch: Gulberg branch at D-Ground, Faisalabad",
 	 size=14, color=WHITE)
 text(s, Inches(8.8), Inches(6.2), Inches(3.8), Inches(0.9), "App: restaurant_os\nSite: restaurant.localhost", size=14, color=WHITE, align=PP_ALIGN.RIGHT)
 state["n"] += 1

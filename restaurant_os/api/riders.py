@@ -15,14 +15,14 @@ from frappe.utils import cint, flt, now_datetime, time_diff_in_seconds
 
 from restaurant_os.services import riders as svc
 
-DROPS = ["Main Market, Gulberg II", "MM Alam Road, Gulberg III", "Liberty Market", "Model Town Link Road", "Garden Town",
-		 "Faisal Town, Block A", "Johar Town, Block H", "Cavalry Ground", "Shadman Colony", "DHA Phase 3, Y Block"]
+DROPS = ["Peoples Colony No. 1", "Peoples Colony No. 2", "Madina Town, Susan Road", "Kohinoor City", "Batala Colony", "Jinnah Colony",
+		 "Civil Lines", "Samanabad", "Ghulam Muhammad Abad", "Gulberg, Faisalabad", "Canal Road", "Satiana Road"]
 
 
 def random_drop(branch):
 	"""A plausible delivery address within ~3 km of the branch (simulators)."""
 	blat, blng = svc.branch_point(branch)
-	return {"text": f"House {random.randint(1, 250)}, {random.choice(DROPS)}, Lahore",
+	return {"text": f"House {random.randint(1, 250)}, {random.choice(DROPS)}, Faisalabad",
 			"latitude": round(blat + random.uniform(-0.025, 0.025), 6), "longitude": round(blng + random.uniform(-0.025, 0.025), 6)}
 
 

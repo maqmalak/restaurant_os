@@ -57,7 +57,7 @@ def run(orders: int = 60, seed: int = 7):
 			# an online order: quote, place, and how long until the kitchen screen has it
 			cart = [{"item_code": d["item_code"], "qty": 1, "modifiers": _defaults(d)} for d in random.sample(dishes, 2)]
 			body = {"order_type": random.choice(["Delivery", "Pickup"]), "items": cart, "customer_name": f"Load {n}",
-					"phone": f"0300{n:07d}", "address": "Gulberg III", "lat": 31.52, "lng": 74.355}
+					"phone": f"0300{n:07d}", "address": "Peoples Colony No. 1", "lat": 31.406, "lng": 73.110}
 			_timed(stats, "online.quote", online.quote, json.dumps(body))
 			t0 = time.perf_counter()
 			r = online.place_order(json.dumps(body))

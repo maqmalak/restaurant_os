@@ -1,6 +1,6 @@
 """`bench --site restaurant.localhost ros-setup` — company and everything a counter needs, re-run safe.
 
-Company Saffron Grill (fictional demo restaurant, Lahore, PKR, fiscal year July–June) via the setup wizard on a fresh site;
+Company Saffron Grill (fictional demo restaurant, Faisalabad, PKR, fiscal year July–June) via the setup wizard on a fresh site;
 warehouses Central Store → Gulberg Kitchen; cost center Gulberg; payment modes Cash / Credit Card; walk-in customer;
 POS Profile "Gulberg Counter" with POS Awesome's cash movement, returns and credit sale settings; branch Gulberg;
 cashier and manager users (passwords in ~/.restaurant-site-secrets, never printed).
@@ -251,8 +251,8 @@ def ensure_pos_profile(kitchen, cost_center, accounts, users):
 def ensure_branch(store, kitchen, cost_center):
 	doc = frappe.get_doc("Restaurant Branch", BRANCH) if frappe.db.exists("Restaurant Branch", BRANCH) else frappe.new_doc("Restaurant Branch")
 	doc.update({"branch_name": BRANCH, "company": COMPANY, "cost_center": cost_center, "store_warehouse": store,
-				"kitchen_warehouse": kitchen, "phone": "+92 42 3500 0000", "address": "Main Boulevard, Gulberg III, Lahore (demo)",
-				"latitude": 31.5204, "longitude": 74.3587, "delivery_radius_km": 6, "delivery_sla_minutes": 45, "prep_sla_minutes": 15})
+				"kitchen_warehouse": kitchen, "phone": "+92 41 8500 000", "address": "D-Ground, Peoples Colony No. 1, Faisalabad (demo)",
+				"latitude": 31.4067, "longitude": 73.1135, "delivery_radius_km": 6, "delivery_sla_minutes": 45, "prep_sla_minutes": 15})
 	if not any(r.pos_profile == PROFILE for r in doc.pos_profiles):
 		doc.append("pos_profiles", {"pos_profile": PROFILE, "channel": "POS"})
 	doc.save(ignore_permissions=True)
@@ -329,3 +329,35 @@ def run():
 	ensure_defaults()
 	frappe.db.commit()
 	print(f"ros-setup: {COMPANY} ({ABBR}), branch {branch}, counter {PROFILE}, warehouses {store} → {kitchen}")
+
+
+# ---------------------------------------------------------------- relocate a branch (demo moved to Faisalabad, D-Ground)
+FAISALABAD = {"address": "D-Ground, Peoples Colony No. 1, Faisalabad (demo)", "phone": "+92 41 8500 000", "latitude": 31.4067, "longitude": 73.1135}
+
+
+def relocate_branch(branch: str = BRANCH, address: str | None = None, latitude: float | None = None, longitude: float | None = None,
+					phone: str | None = None, old_city: str = "Lahore", new_city: str = "Faisalabad") -> dict:
+	"""Move a branch's map point and address; riders, their GPS trail and every delivery pin of the branch move by the same
+	offset (distances and routes stay as they were); ', <old_city>' in delivery addresses becomes ', <new_city>'."""
+	lat = flt(latitude if latitude is not None else FAISALABAD["latitude"])
+	lng = flt(longitude if longitude is not None else FAISALABAD["longitude"])
+	b = frappe.get_doc("Restaurant Branch", branch)
+	dlat, dlng = lat - flt(b.latitude), lng - flt(b.longitude)
+	b.update({"latitude": lat, "longitude": lng, "address": address or FAISALABAD["address"], "phone": phone or FAISALABAD["phone"]})
+	b.save(ignore_permissions=True)
+	if abs(dlat) < 1e-9 and abs(dlng) < 1e-9:
+		return {"moved": 0}
+	riders = frappe.get_all("Rider", {"branch": branch}, pluck="name")
+	frappe.db.sql("""update tabRider set latitude = latitude + %s, longitude = longitude + %s
+		where branch = %s and latitude is not null and latitude != 0""", (dlat, dlng, branch))
+	if riders:
+		frappe.db.sql("""update `tabRider Location Log` set latitude = latitude + %s, longitude = longitude + %s
+			where rider in %s""", (dlat, dlng, riders))
+	frappe.db.sql("""update `tabRestaurant Order` set delivery_lat = delivery_lat + %s, delivery_lng = delivery_lng + %s
+		where branch = %s and delivery_lat is not null and delivery_lat != 0""", (dlat, dlng, branch))
+	frappe.db.sql("""update `tabRestaurant Order` set delivery_address = replace(delivery_address, %s, %s)
+		where branch = %s and delivery_address like %s""", (f", {old_city}", f", {new_city}", branch, f"%, {old_city}%"))
+	frappe.db.sql("""update `tabEmployee Checkin` set latitude = latitude + %s, longitude = longitude + %s
+		where employee in (select employee from tabRider where branch = %s) and latitude is not null and latitude != 0""", (dlat, dlng, branch))
+	frappe.db.commit()
+	return {"moved": 1, "dlat": round(dlat, 5), "dlng": round(dlng, 5), "riders": len(riders)}

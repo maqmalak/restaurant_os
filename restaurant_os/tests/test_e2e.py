@@ -73,7 +73,7 @@ class TestNineSteps(IntegrationTestCase):
 			return tables.send(t, json.dumps([{"item_code": DISH, "qty": 1}]))["order"]
 		if channel == "Web":
 			return online.place_order(json.dumps({"order_type": "Delivery", "items": item, "customer_name": "E2E Web Diner",
-												  "phone": "03119990001", "address": "House 9, Gulberg III", "lat": 31.52, "lng": 74.355}))["order"]
+												  "phone": "03119990001", "address": "House 9, Peoples Colony No. 1", "lat": 31.406, "lng": 73.110}))["order"]
 		if channel == "Kiosk":
 			k = online.kiosk_order(json.dumps({"order_type": "Takeaway", "name": "E2E", "items": item}))
 			draft = frappe.get_doc(pos._dt(PROFILE), k["invoice"])
@@ -87,11 +87,11 @@ class TestNineSteps(IntegrationTestCase):
 
 			return receive({"order_id": f"E2E-{frappe.generate_hash(length=8)}", "expedition_type": "delivery",
 							"customer": {"name": "Panda Diner", "phone": "03119990002"},
-							"address": {"text": "Liberty Market, Lahore", "latitude": 31.51, "longitude": 74.345},
+							"address": {"text": "Madina Town, Faisalabad", "latitude": 31.396, "longitude": 73.100},
 							"products": [{"remote_code": DISH, "quantity": 1, "unit_price": 700}]}).name
 		if channel == "Phone":
 			return rapi.new_delivery_order(json.dumps({"customer_name": "E2E Phone Diner", "phone": "03119990003", "address": "Garden Town",
-													   "lat": 31.505, "lng": 74.32, "items": [{"item_code": DISH, "qty": 1}]}))["order"]
+													   "lat": 31.391, "lng": 73.075, "items": [{"item_code": DISH, "qty": 1}]}))["order"]
 		raise ValueError(channel)
 
 	# ------------------------------------------------------------------ the kitchen and the road (steps 4–6)
@@ -137,7 +137,7 @@ class TestNineSteps(IntegrationTestCase):
 	# ------------------------------------------------------------------ the test
 	def test_every_channel_through_nine_steps(self):
 		for r in self.riders:                                 # riders on shift
-			self._as(r.user, rapi.set_duty, 1, 31.52, 74.35)
+			self._as(r.user, rapi.set_duty, 1, 31.406, 73.105)
 		# steps 1–2: the dish's ingredient is in the kitchen (stocked from the central store by the demo seed)
 		before = _qty(INGREDIENT, self.kitchen)
 		self.started = frappe.utils.now_datetime()

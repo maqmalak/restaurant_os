@@ -301,8 +301,8 @@ class TestRestaurantPOS(IntegrationTestCase):
 		self._free_riders()
 		for r in riders:
 			self._as(r.user, api.set_duty, 1)
-		o = api.new_delivery_order(json.dumps({"customer_name": "Test Diner", "phone": "+92 300 0000001", "address": "House 1, Gulberg",
-											   "lat": 31.53, "lng": 74.36, "items": [{"item_code": "Chicken Tikka", "qty": 2}]}))
+		o = api.new_delivery_order(json.dumps({"customer_name": "Test Diner", "phone": "+92 300 0000001", "address": "House 1, Peoples Colony",
+											   "lat": 31.416, "lng": 73.115, "items": [{"item_code": "Chicken Tikka", "qty": 2}]}))
 		order = frappe.get_doc("Restaurant Order", o["order"])
 		self.assertEqual((order.delivery_by, order.channel), ("Own Rider", "Phone"))
 		self.assertTrue(order.tracking_key and order.delivery_otp and order.cod_amount > 0)
@@ -316,11 +316,11 @@ class TestRestaurantPOS(IntegrationTestCase):
 		self.assertNotEqual(da2.rider, first.name)
 		rider = next(r for r in riders if r.name == da2.rider)
 		self._as(rider.user, api.accept, da2.name)
-		self._as(rider.user, api.location, 31.521, 74.359, 8)
+		self._as(rider.user, api.location, 31.407, 73.114, 8)
 		self._as(rider.user, api.pickup, da2.name)
 		self.assertEqual(frappe.db.get_value("Restaurant Order", order.name, "status"), "Out for Delivery")
 		t = api.track(order.tracking_key)
-		self.assertEqual((t["status"], t["rider"]["lat"]), ("Out for Delivery", 31.521))
+		self.assertEqual((t["status"], t["rider"]["lat"]), ("Out for Delivery", 31.407))
 		with self.assertRaises(frappe.ValidationError):
 			self._as(rider.user, api.deliver, da2.name, otp="0000" if order.delivery_otp != "0000" else "1111")
 		cod = flt(frappe.db.get_value("Restaurant Order", order.name, "cod_amount"))
@@ -366,9 +366,9 @@ class TestRestaurantPOS(IntegrationTestCase):
 
 		rider = frappe.get_all("Rider", {"branch": masters.BRANCH}, ["name", "user", "employee"], limit=1)[0]
 		frappe.db.set_value("Rider", rider.name, "status", "Off Duty")
-		self._as(rider.user, api.set_duty, 1, 31.52, 74.36)
+		self._as(rider.user, api.set_duty, 1, 31.406, 73.115)
 		ci = frappe.get_all("Employee Checkin", {"employee": rider.employee}, ["log_type", "latitude", "device_id"], order_by="creation desc", limit=1)[0]
-		self.assertEqual((ci.log_type, flt(ci.latitude)), ("IN", 31.52))
+		self.assertEqual((ci.log_type, flt(ci.latitude)), ("IN", 31.406))
 		self._as(rider.user, api.set_duty, 0)
 		self.assertEqual(frappe.get_all("Employee Checkin", {"employee": rider.employee}, pluck="log_type", order_by="creation desc", limit=1)[0], "OUT")
 
@@ -411,9 +411,9 @@ class TestRestaurantPOS(IntegrationTestCase):
 		self.assertEqual(codes, ["Chicken Malai Boti", "Extra Cheese", "Delivery Charge"], "add-on item and delivery fee become lines")
 		self.assertGreater(q["tax"], 0)
 		r = online.place_order(json.dumps({"order_type": "Delivery", "items": cart, "customer_name": "Online Test", "phone": "+92 300 1112233",
-										   "address": "House 9, Gulberg", "lat": 31.525, "lng": 74.355, "client_order_uuid": "u-123"}))
+										   "address": "House 9, Peoples Colony", "lat": 31.411, "lng": 73.110, "client_order_uuid": "u-123"}))
 		again = online.place_order(json.dumps({"order_type": "Delivery", "items": cart, "customer_name": "Online Test", "phone": "+92 300 1112233",
-											   "address": "House 9, Gulberg", "client_order_uuid": "u-123"}))
+											   "address": "House 9, Peoples Colony", "client_order_uuid": "u-123"}))
 		self.assertEqual(again["order"], r["order"])
 		o = frappe.get_doc("Restaurant Order", r["order"])
 		self.assertEqual((o.channel, o.order_type, o.delivery_by), ("Web", "Delivery", "Own Rider"))
@@ -453,7 +453,7 @@ class TestRestaurantPOS(IntegrationTestCase):
 
 		cart = [{"item_code": "Chicken Tikka", "qty": 2, "modifiers": [{"group": "Spice Level", "name": "Medium"}]}]
 		r = online.place_order(json.dumps({"order_type": "Delivery", "payment": "Online", "items": cart, "customer_name": "Card Diner",
-										   "phone": "+92 300 4445566", "address": "House 5, Gulberg", "lat": 31.522, "lng": 74.357}))
+										   "phone": "+92 300 4445566", "address": "House 5, Peoples Colony", "lat": 31.408, "lng": 73.112}))
 		self.assertTrue(r["payment_url"].startswith("/ros/pay/"))
 		o = frappe.get_doc("Restaurant Order", r["order"])
 		self.assertEqual((o.status, o.payment_status, flt(o.cod_amount)), ("Awaiting Payment", "Awaiting", 0))
