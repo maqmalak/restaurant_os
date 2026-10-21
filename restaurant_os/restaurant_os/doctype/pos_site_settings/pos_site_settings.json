@@ -1,0 +1,208 @@
+{
+ "doctype": "DocType",
+ "name": "POS Site Settings",
+ "module": "Restaurant OS",
+ "custom": 0,
+ "engine": "InnoDB",
+ "creation": "2026-10-20 12:00:00.000000",
+ "modified": "2026-10-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator",
+ "description": "Content of the public MicroMax POS website (/ros/): plans and prices, trial, contact details.",
+ "istable": 0,
+ "issingle": 1,
+ "editable_grid": 0,
+ "field_order": [
+  "section_brand",
+  "brand_name",
+  "hero_title",
+  "hero_subtitle",
+  "column_break_b",
+  "site_enabled",
+  "show_pricing",
+  "section_pricing",
+  "trial_days",
+  "yearly_months",
+  "column_break_p",
+  "setup_fee",
+  "pricing_note",
+  "plans",
+  "section_contact",
+  "phone",
+  "whatsapp",
+  "column_break_c",
+  "email",
+  "address",
+  "section_leads",
+  "lead_owner"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_brand",
+   "fieldtype": "Section Break",
+   "label": "Brand"
+  },
+  {
+   "fieldname": "brand_name",
+   "fieldtype": "Data",
+   "label": "Product Name",
+   "default": "MicroMax POS"
+  },
+  {
+   "fieldname": "hero_title",
+   "fieldtype": "Data",
+   "label": "Hero Headline",
+   "default": "Run your whole restaurant from one screen."
+  },
+  {
+   "fieldname": "hero_subtitle",
+   "fieldtype": "Small Text",
+   "label": "Hero Text"
+  },
+  {
+   "fieldname": "column_break_b",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "site_enabled",
+   "fieldtype": "Check",
+   "label": "Website Online",
+   "default": "1",
+   "description": "Off: /ros/ opens the sign-in page instead"
+  },
+  {
+   "fieldname": "show_pricing",
+   "fieldtype": "Check",
+   "label": "Show Pricing",
+   "default": "1"
+  },
+  {
+   "fieldname": "section_pricing",
+   "fieldtype": "Section Break",
+   "label": "Pricing"
+  },
+  {
+   "fieldname": "trial_days",
+   "fieldtype": "Int",
+   "label": "Free Trial (days)",
+   "default": "14"
+  },
+  {
+   "fieldname": "yearly_months",
+   "fieldtype": "Int",
+   "label": "Yearly Price = Months",
+   "default": "10",
+   "description": "10 = two months free"
+  },
+  {
+   "fieldname": "column_break_p",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "setup_fee",
+   "fieldtype": "Currency",
+   "label": "Setup Fee (PKR)",
+   "description": "0 = no setup fee"
+  },
+  {
+   "fieldname": "pricing_note",
+   "fieldtype": "Data",
+   "label": "Pricing Note",
+   "default": "Prices in PKR per branch. Taxes extra where applicable."
+  },
+  {
+   "fieldname": "plans",
+   "fieldtype": "Table",
+   "label": "Plans",
+   "options": "POS Site Plan"
+  },
+  {
+   "fieldname": "section_contact",
+   "fieldtype": "Section Break",
+   "label": "Contact"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone"
+  },
+  {
+   "fieldname": "whatsapp",
+   "fieldtype": "Data",
+   "label": "WhatsApp Number",
+   "description": "International format, e.g. 923001234567"
+  },
+  {
+   "fieldname": "column_break_c",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "section_leads",
+   "fieldtype": "Section Break",
+   "label": "Demo Requests"
+  },
+  {
+   "fieldname": "lead_owner",
+   "fieldtype": "Link",
+   "label": "Assign Demo Requests To",
+   "options": "User",
+   "description": "Each website demo request becomes a Lead assigned to this user"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  },
+  {
+   "role": "Stock User",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "row_format": "Dynamic",
+ "actions": [],
+ "links": []
+}

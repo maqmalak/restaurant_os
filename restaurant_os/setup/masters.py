@@ -324,5 +324,8 @@ def run():
 	ensure_settings(branch, accounts)
 	ensure_riders(branch)
 	ensure_stock_settings()
+	from restaurant_os.api.site import ensure_defaults
+
+	ensure_defaults()
 	frappe.db.commit()
 	print(f"ros-setup: {COMPANY} ({ABBR}), branch {branch}, counter {PROFILE}, warehouses {store} → {kitchen}")

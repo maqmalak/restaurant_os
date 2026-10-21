@@ -76,6 +76,8 @@ export const POS_NAVIGATION: NavGroup[] = [
       { label: "Floor Areas", to: "/restaurant/floor-areas", icon: LayoutGrid },
       { label: "Menu Modifiers", to: "/restaurant/modifiers", icon: SlidersVertical },
       { label: "Settings", to: "/restaurant/settings", icon: Settings2 },
+      { label: "Website Settings", to: "/restaurant/website", icon: Globe },
+      { label: "View Website", to: "/ros/", icon: Globe, external: true },
     ],
   },
 ];
@@ -95,6 +97,7 @@ const ROUTE_TITLES: Record<string, string> = {
   loyalty: "Loyalty Programs",
   new: "New",
   restaurant: "Restaurant",
+  website: "Website Settings",
   reviews: "Reviews",
   campaigns: "Campaigns",
   orders: "Orders",

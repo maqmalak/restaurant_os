@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { createContext, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Link, Navigate } from "react-router-dom";
+import { useFrappeGetCall } from "frappe-react-sdk";
 import {
+  Mail, MapPin, MessageCircle, Phone as PhoneIcon,
   ArrowRight, BadgeCheck, Bike, Boxes, Check, ChefHat, ChevronDown, CloudOff, CreditCard, Gift, Globe, LineChart, Menu, MonitorSmartphone,
   Receipt, ShieldCheck, Smartphone, Sparkles, Store, TabletSmartphone, Timer, Truck, UtensilsCrossed, X, Zap,
 } from "lucide-react";
@@ -9,8 +11,8 @@ import { humanizeError, postCall } from "@/services/frappe";
 import { cn } from "@/utils/cn";
 import { MicroMaxLogo, shot, SITE_STYLE } from "./brand";
 
-/* ============================================================ business settings (owner to confirm) */
-/** Monthly prices in PKR per branch; yearly = 10 months (2 months free). Change here — every price on the page follows. */
+/* ============================================================ content: Restaurant → Website Settings (POS Site Settings) */
+/** Built-in texts, used until the settings load or where a setting is left empty. */
 const PLANS = [
   { key: "Starter", price: 4999, blurb: "One counter, everything to sell and cook.", cta: "Start free trial",
     features: ["Counter POS with offline mode", "Kitchen display (KDS)", "FBR / PRA invoice reporting + QR receipt", "Sales tax, discounts, returns, shifts & Z-report",
@@ -22,9 +24,13 @@ const PLANS = [
     features: ["Everything in Growth, unlimited counters", "Multi-branch & central store procurement", "Ingredient variance & menu engineering",
       "Online payments (JazzCash, Easypaisa, cards)", "Custom reports & integrations", "Dedicated onboarding manager"] },
 ];
-const TRIAL_DAYS = 14;
-const yearly = (m: number) => m * 10;
-const pkr = (v: number) => `Rs ${v.toLocaleString("en-PK")}`;
+type Plan = { key: string; price: number; popular?: boolean | number; blurb: string; cta: string; features: string[] };
+interface Content { brand: string; hero_title?: string | null; hero_subtitle?: string | null; enabled: number; show_pricing: number; trial_days: number;
+  yearly_months: number; setup_fee: number; pricing_note?: string | null; plans: Plan[]; contact: { phone?: string | null; whatsapp?: string | null; email?: string | null; address?: string | null } }
+const DEFAULT: Content = { brand: "MicroMax POS", enabled: 1, show_pricing: 1, trial_days: 14, yearly_months: 10, setup_fee: 0, plans: PLANS, contact: {} };
+const Site = createContext<Content>(DEFAULT);
+const useSite = () => useContext(Site);
+const pkr = (v: number) => `Rs ${Math.round(v).toLocaleString("en-PK")}`;
 
 /* ============================================================ helpers */
 function useReveal() {
@@ -61,7 +67,17 @@ function Phone({ src, alt, className }: { src: string; alt: string; className?: 
 
 /* ============================================================ page */
 export default function SitePage() {
+  const { data, isLoading } = useFrappeGetCall<{ message: Content }>("restaurant_os.api.site.content", undefined, "ros.site.content");
+  const loaded = data?.message;
+  const c: Content = loaded ? { ...DEFAULT, ...loaded, plans: loaded.plans?.length ? loaded.plans : PLANS } : DEFAULT;
+  if (loaded && !loaded.enabled) return <Navigate to="/login" replace />;
+  return <Site.Provider value={c}><SiteBody loading={isLoading} /></Site.Provider>;
+}
+
+function SiteBody({ loading }: { loading: boolean }) {
+  const c = useSite();
   useReveal();
+  void loading;
   const { isAuthenticated } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -73,7 +89,7 @@ export default function SitePage() {
     if (hash) setTimeout(() => go(hash), 300);
     return () => { window.removeEventListener("scroll", on); document.title = "MicroMax POS"; };
   }, []);
-  const nav = [["features", "Features"], ["modules", "Modules"], ["pricing", "Pricing"], ["faq", "FAQ"]] as const;
+  const nav = ([["features", "Features"], ["modules", "Modules"], ["pricing", "Pricing"], ["faq", "FAQ"]] as const).filter(([id]) => id !== "pricing" || c.show_pricing);
 
   return (
     <div className="mx min-h-screen bg-[#faf7f1] text-[#14110d]">
@@ -114,18 +130,17 @@ export default function SitePage() {
               <BadgeCheck className="h-4 w-4 text-[#f5c46b]" /> Built for Pakistan · FBR &amp; PRA ready
             </div>
             <h1 className="serif rise mt-6 text-5xl font-semibold leading-[1.02] sm:text-6xl lg:text-[4.6rem]" style={{ animationDelay: ".08s" }}>
-              Run your whole restaurant from <span className="gold-grad">one screen.</span>
+              {c.hero_title && c.hero_title !== "Run your whole restaurant from one screen." ? c.hero_title : <>Run your whole restaurant from <span className="gold-grad">one screen.</span></>}
             </h1>
             <p className="rise mt-6 max-w-xl text-lg leading-relaxed text-white/65" style={{ animationDelay: ".16s" }}>
-              Counter, kitchen, online orders, riders, stock and accounts — connected. Every order moves itself from the till to the kitchen,
-              the rider and the books, with nothing typed twice.
+              {c.hero_subtitle || "Counter, kitchen, online orders, riders, stock and accounts — connected. Every order moves itself from the till to the kitchen, the rider and the books, with nothing typed twice."}
             </p>
             <div className="rise mt-9 flex flex-wrap items-center gap-3" style={{ animationDelay: ".24s" }}>
               <button onClick={() => go("demo")} className="btn-gold inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-base font-bold transition">Book a free demo <ArrowRight className="h-5 w-5" /></button>
-              <button onClick={() => go("pricing")} className="rounded-full border border-white/15 px-7 py-3.5 text-base font-semibold text-white/85 transition hover:bg-white/5">See pricing</button>
+              {c.show_pricing ? <button onClick={() => go("pricing")} className="rounded-full border border-white/15 px-7 py-3.5 text-base font-semibold text-white/85 transition hover:bg-white/5">See pricing</button> : null}
             </div>
             <div className="rise mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/55" style={{ animationDelay: ".32s" }}>
-              {[`${TRIAL_DAYS}-day free trial`, "No setup fee", "Works offline"].map((t) => <span key={t} className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-[#f5c46b]" />{t}</span>)}
+              {[`${c.trial_days}-day free trial`, c.setup_fee ? `Setup ${pkr(c.setup_fee)}` : "No setup fee", "Works offline"].map((t) => <span key={t} className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-[#f5c46b]" />{t}</span>)}
             </div>
           </div>
           <div className="relative">
@@ -265,7 +280,7 @@ export default function SitePage() {
       </section>
 
       {/* ------------------------------------------------ pricing */}
-      <Pricing />
+      {c.show_pricing ? <Pricing /> : null}
 
       {/* ------------------------------------------------ faq */}
       <section id="faq" className="scroll-mt-20 py-24 lg:py-32">
@@ -295,7 +310,8 @@ export default function SitePage() {
       <footer className="bg-[#0b0a09] pb-10 pt-16 text-white/55">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <div className="flex flex-col gap-10 border-b border-white/10 pb-12 md:flex-row md:items-start md:justify-between">
-            <div className="max-w-sm"><MicroMaxLogo /><p className="mt-5 text-sm leading-relaxed">Restaurant point of sale and management, from the counter to the accounts.</p></div>
+            <div className="max-w-sm"><MicroMaxLogo /><p className="mt-5 text-sm leading-relaxed">Restaurant point of sale and management, from the counter to the accounts.</p>
+              <Contact className="mt-6" /></div>
             <div className="grid grid-cols-2 gap-x-16 gap-y-3 text-sm">
               {nav.map(([id, label]) => <button key={id} onClick={() => go(id)} className="text-left hover:text-white">{label}</button>)}
               <button onClick={() => go("demo")} className="text-left hover:text-white">Book a demo</button>
@@ -303,8 +319,8 @@ export default function SitePage() {
             </div>
           </div>
           <div className="flex flex-col justify-between gap-3 pt-8 text-xs md:flex-row">
-            <span>© {new Date().getFullYear()} MicroMax. All rights reserved.</span>
-            <span>Prices in PKR per branch. Taxes extra where applicable.</span>
+            <span>© {new Date().getFullYear()} {c.brand}. All rights reserved.</span>
+            <span>{c.pricing_note || "Prices in PKR per branch. Taxes extra where applicable."}</span>
           </div>
         </div>
       </footer>
@@ -314,6 +330,9 @@ export default function SitePage() {
 
 /* ============================================================ pricing */
 function Pricing() {
+  const c = useSite();
+  const yearly = (m: number) => m * c.yearly_months;
+  const free = 12 - c.yearly_months;
   const [annual, setAnnual] = useState(true);
   return (
     <section id="pricing" className="relative scroll-mt-20 overflow-hidden bg-[#0b0a09] py-24 text-[#f6efe4] lg:py-32">
@@ -323,17 +342,17 @@ function Pricing() {
         <div className="reveal mx-auto max-w-2xl text-center">
           <Eyebrow dark>Pricing</Eyebrow>
           <h2 className="serif mt-4 text-4xl font-semibold leading-tight sm:text-5xl">Simple plans. <span className="gold-grad">No surprises.</span></h2>
-          <p className="mt-5 text-lg text-white/60">Every plan includes menu setup, staff training and support. {TRIAL_DAYS} days free to try.</p>
+          <p className="mt-5 text-lg text-white/60">Every plan includes menu setup, staff training and support. {c.trial_days} days free to try.</p>
           <div className="mt-9 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1.5">
             {[[false, "Monthly"], [true, "Yearly"]].map(([v, l]) => (
               <button key={l as string} onClick={() => setAnnual(v as boolean)} className={cn("rounded-full px-6 py-2.5 text-sm font-semibold transition-all", annual === v ? "btn-gold" : "text-white/65 hover:text-white")}>
-                {l as string}{v ? <span className={cn("ml-2 rounded-full px-2 py-0.5 text-[11px]", annual ? "bg-black/15" : "bg-[#f5c46b]/15 text-[#f5c46b]")}>2 months free</span> : null}
+                {l as string}{v && free > 0 ? <span className={cn("ml-2 rounded-full px-2 py-0.5 text-[11px]", annual ? "bg-black/15" : "bg-[#f5c46b]/15 text-[#f5c46b]")}>{free} month{free === 1 ? "" : "s"} free</span> : null}
               </button>
             ))}
           </div>
         </div>
-        <div className="mt-14 grid items-stretch gap-6 lg:grid-cols-3">
-          {PLANS.map((p, k) => (
+        <div className={cn("mt-14 grid items-stretch gap-6", c.plans.length >= 3 ? "lg:grid-cols-3" : c.plans.length === 2 ? "lg:mx-auto lg:max-w-4xl lg:grid-cols-2" : "lg:mx-auto lg:max-w-md")}>
+          {c.plans.map((p, k) => (
             <div key={p.key} style={{ transitionDelay: `${k * 80}ms` }}
               className={cn("reveal relative flex flex-col rounded-[2rem] p-8", p.popular
                 ? "bg-gradient-to-b from-[#2a2015] to-[#16110c] ring-2 ring-[#f5c46b]/60 shadow-[0_40px_90px_-40px_rgba(229,154,58,.6)] lg:-translate-y-4"
@@ -382,6 +401,7 @@ function Faq({ q, a }: { q: string; a: string }) {
 
 /* ============================================================ demo form */
 function Demo() {
+  const c = useSite();
   const [f, setF] = useState({ name: "", phone: "", restaurant: "", city: "", email: "", branches: "1", plan: "Growth", message: "" });
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -402,8 +422,9 @@ function Demo() {
           <h2 className="serif mt-4 text-4xl font-semibold leading-tight sm:text-5xl">See it running on <span className="gold-grad">your menu.</span></h2>
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-white/65">Tell us about your restaurant. We'll call you back, set up a trial with your dishes and show the whole flow — counter, kitchen, riders and reports.</p>
           <ul className="mt-8 space-y-3 text-white/70">
-            {["30-minute walkthrough, online or at your restaurant", `${TRIAL_DAYS}-day free trial with your own menu`, "Help moving from your current system"].map((t) => <li key={t} className="flex items-center gap-3"><Check className="h-5 w-5 text-[#f5c46b]" />{t}</li>)}
+            {["30-minute walkthrough, online or at your restaurant", `${c.trial_days}-day free trial with your own menu`, "Help moving from your current system"].map((t) => <li key={t} className="flex items-center gap-3"><Check className="h-5 w-5 text-[#f5c46b]" />{t}</li>)}
           </ul>
+          <Contact className="mt-10" dark />
         </div>
         <div className="reveal glass rounded-[2rem] p-7 sm:p-9">
           {sent ? (
@@ -422,7 +443,7 @@ function Demo() {
               <label><span className="mb-1.5 block text-sm text-white/60">Branches</span>
                 <select value={f.branches} onChange={(e) => setF({ ...f, branches: e.target.value })} className={field}>{["1", "2–3", "4–10", "10+"].map((b) => <option key={b} className="text-black">{b}</option>)}</select></label>
               <label><span className="mb-1.5 block text-sm text-white/60">Plan</span>
-                <select id="demo-plan" value={f.plan} onChange={(e) => setF({ ...f, plan: e.target.value })} className={field}>{[...PLANS.map((p) => p.key), "Not sure"].map((p) => <option key={p} className="text-black">{p}</option>)}</select></label>
+                <select id="demo-plan" value={f.plan} onChange={(e) => setF({ ...f, plan: e.target.value })} className={field}>{[...c.plans.map((p) => p.key), "Not sure"].map((p) => <option key={p} className="text-black">{p}</option>)}</select></label>
               <label className="sm:col-span-2"><span className="mb-1.5 block text-sm text-white/60">Anything we should know?</span>
                 <textarea value={f.message} onChange={(e) => setF({ ...f, message: e.target.value })} rows={3} className={cn(field, "h-auto py-3")} /></label>
               {err && <p className="text-sm text-red-300 sm:col-span-2">{err}</p>}
@@ -434,5 +455,26 @@ function Demo() {
         </div>
       </div>
     </section>
+  );
+}
+
+/* ============================================================ contact (only what's filled in under Website Settings) */
+function Contact({ className, dark }: { className?: string; dark?: boolean }) {
+  const { contact } = useSite();
+  const items = [
+    contact.phone && { href: `tel:${contact.phone.replace(/\s/g, "")}`, icon: PhoneIcon, text: contact.phone },
+    contact.whatsapp && { href: `https://wa.me/${contact.whatsapp.replace(/\D/g, "")}`, icon: MessageCircle, text: "WhatsApp us" },
+    contact.email && { href: `mailto:${contact.email}`, icon: Mail, text: contact.email },
+    contact.address && { href: undefined, icon: MapPin, text: contact.address },
+  ].filter(Boolean) as { href?: string; icon: typeof PhoneIcon; text: string }[];
+  if (!items.length) return null;
+  return (
+    <div className={cn("flex flex-wrap gap-3", className)}>
+      {items.map(({ href, icon: I, text }) => {
+        const cls = cn("inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition", dark ? "border-white/15 text-white/80 hover:bg-white/5" : "border-white/15 text-white/70 hover:text-white");
+        return href ? <a key={text} href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noopener" className={cls}><I className="h-4 w-4 text-[#f5c46b]" />{text}</a>
+          : <span key={text} className={cls}><I className="h-4 w-4 text-[#f5c46b]" />{text}</span>;
+      })}
+    </div>
   );
 }

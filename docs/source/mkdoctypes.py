@@ -476,4 +476,38 @@ write("Restaurant Campaign", [
     F("sent_on", "Datetime", "Sent On", read_only=1),
     F("recipients", "Table", "Recipients", options="Restaurant Campaign Recipient", read_only=1),
 ], autoname="format:CMP-{YY}-{###}", title_field="title", desc="A message to a customer group (WhatsApp / SMS), optionally with a coupon.", sort="creation")
+
+# ---------------------------------------------------------------- public website (/ros/) content
+write("POS Site Plan", [
+    F("plan_name", "Data", "Plan", reqd=1, in_list_view=1),
+    F("monthly_price", "Currency", "Monthly Price (PKR)", in_list_view=1, description="0 = Custom (talk to sales)"),
+    F("popular", "Check", "Most Popular", in_list_view=1),
+    F("cta", "Data", "Button Text", default="Start free trial"),
+    F("blurb", "Small Text", "One-line Description"),
+    F("features", "Small Text", "Features", description="One per line", in_list_view=1),
+], istable=1)
+write("POS Site Settings", [
+    F("section_brand", "Section Break", "Brand"),
+    F("brand_name", "Data", "Product Name", default="MicroMax POS"),
+    F("hero_title", "Data", "Hero Headline", default="Run your whole restaurant from one screen."),
+    F("hero_subtitle", "Small Text", "Hero Text"),
+    F("column_break_b", "Column Break"),
+    F("site_enabled", "Check", "Website Online", default="1", description="Off: /ros/ opens the sign-in page instead"),
+    F("show_pricing", "Check", "Show Pricing", default="1"),
+    F("section_pricing", "Section Break", "Pricing"),
+    F("trial_days", "Int", "Free Trial (days)", default="14"),
+    F("yearly_months", "Int", "Yearly Price = Months", default="10", description="10 = two months free"),
+    F("column_break_p", "Column Break"),
+    F("setup_fee", "Currency", "Setup Fee (PKR)", description="0 = no setup fee"),
+    F("pricing_note", "Data", "Pricing Note", default="Prices in PKR per branch. Taxes extra where applicable."),
+    F("plans", "Table", "Plans", options="POS Site Plan"),
+    F("section_contact", "Section Break", "Contact"),
+    F("phone", "Data", "Phone"),
+    F("whatsapp", "Data", "WhatsApp Number", description="International format, e.g. 923001234567"),
+    F("column_break_c", "Column Break"),
+    F("email", "Data", "Email", options="Email"),
+    F("address", "Small Text", "Address"),
+    F("section_leads", "Section Break", "Demo Requests"),
+    F("lead_owner", "Link", "Assign Demo Requests To", options="User", description="Each website demo request becomes a Lead assigned to this user"),
+], issingle=1, desc="Content of the public MicroMax POS website (/ros/): plans and prices, trial, contact details.")
 print("ok")

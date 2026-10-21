@@ -1,0 +1,71 @@
+{
+ "doctype": "DocType",
+ "name": "POS Site Plan",
+ "module": "Restaurant OS",
+ "custom": 0,
+ "engine": "InnoDB",
+ "creation": "2026-10-20 12:00:00.000000",
+ "modified": "2026-10-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator",
+ "description": "",
+ "istable": 1,
+ "issingle": 0,
+ "editable_grid": 1,
+ "field_order": [
+  "plan_name",
+  "monthly_price",
+  "popular",
+  "cta",
+  "blurb",
+  "features"
+ ],
+ "fields": [
+  {
+   "fieldname": "plan_name",
+   "fieldtype": "Data",
+   "label": "Plan",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "monthly_price",
+   "fieldtype": "Currency",
+   "label": "Monthly Price (PKR)",
+   "in_list_view": 1,
+   "description": "0 = Custom (talk to sales)"
+  },
+  {
+   "fieldname": "popular",
+   "fieldtype": "Check",
+   "label": "Most Popular",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cta",
+   "fieldtype": "Data",
+   "label": "Button Text",
+   "default": "Start free trial"
+  },
+  {
+   "fieldname": "blurb",
+   "fieldtype": "Small Text",
+   "label": "One-line Description"
+  },
+  {
+   "fieldname": "features",
+   "fieldtype": "Small Text",
+   "label": "Features",
+   "description": "One per line",
+   "in_list_view": 1
+  }
+ ],
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "row_format": "Dynamic",
+ "actions": [],
+ "links": []
+}

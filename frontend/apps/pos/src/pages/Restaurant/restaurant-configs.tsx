@@ -1,4 +1,4 @@
-import { Banknote, Bike, Megaphone, MessageSquareHeart, Send, Users, ChefHat, ClipboardList, Trash2, LayoutGrid, MapPin, Plug, Receipt, Settings2, SlidersVertical, Store, UtensilsCrossed } from "lucide-react";
+import { Banknote, Bike, Globe, Megaphone, MessageSquareHeart, Send, Users, ChefHat, ClipboardList, Trash2, LayoutGrid, MapPin, Plug, Receipt, Settings2, SlidersVertical, Store, UtensilsCrossed } from "lucide-react";
 import { lazy } from "react";
 import toast from "react-hot-toast";
 import type { DocConfig } from "@/components/doc/doc-config";
@@ -456,4 +456,50 @@ export const CAMPAIGN_CONFIG: DocConfig = {
   titleOf: (v) => v.title || "New Campaign",
 };
 
-export const RESTAURANT_CONFIGS = [REVIEW_CONFIG, CAMPAIGN_CONFIG, ORDER_CONFIG, WASTAGE_CONFIG, RIDER_CONFIG, BRANCH_CONFIG, STATION_CONFIG, TABLE_CONFIG, FLOOR_AREA_CONFIG, MODIFIER_GROUP_CONFIG, SETTINGS_CONFIG];
+export const SITE_SETTINGS_CONFIG: DocConfig = {
+  doctype: "POS Site Settings",
+  base: "/restaurant/website",
+  singular: "Website Settings",
+  plural: "Website Settings",
+  subtitle: "The public MicroMax POS website (/ros/): plans and prices, free trial, contact details and who gets demo requests.",
+  icon: Globe,
+  single: true,
+  listFields: [],
+  columns: [],
+  searchFields: [],
+  fields: [
+    tab("Website"),
+    sec("Brand & headline"),
+    data("brand_name", "Product Name"),
+    data("hero_title", "Hero Headline"),
+    text("hero_subtitle", "Hero Text"),
+    colBreak(),
+    check("site_enabled", "Website Online"),
+    check("show_pricing", "Show Pricing"),
+    sec("Contact (shown on the website)"),
+    data("phone", "Phone"),
+    data("whatsapp", "WhatsApp Number (e.g. 923001234567)"),
+    colBreak(),
+    data("email", "Email"),
+    text("address", "Address"),
+    sec("Demo requests"),
+    link("lead_owner", "Assign Demo Requests To", "User"),
+    tab("Pricing"),
+    sec("Pricing"),
+    int("trial_days", "Free Trial (days)"),
+    int("yearly_months", "Yearly Price = Months (10 = two months free)"),
+    colBreak(),
+    currency("setup_fee", "Setup Fee (PKR, 0 = none)"),
+    data("pricing_note", "Pricing Note"),
+  ],
+  children: [{
+    tab: "Pricing", key: "plans", label: "Plans", description: "One row per plan, in the order shown. Monthly price 0 = Custom (talk to sales). Features: one per line.",
+    doctype: "POS Site Plan", wide: true,
+    columns: [req(data("plan_name", "Plan")), currency("monthly_price", "Monthly (PKR)"), check("popular", "Most Popular"), data("cta", "Button Text")],
+    dialogColumns: [text("blurb", "One-line Description"), text("features", "Features (one per line)")],
+  }],
+  tabIcons: { Website: Globe },
+  titleOf: () => "Website Settings",
+};
+
+export const RESTAURANT_CONFIGS = [SITE_SETTINGS_CONFIG, REVIEW_CONFIG, CAMPAIGN_CONFIG, ORDER_CONFIG, WASTAGE_CONFIG, RIDER_CONFIG, BRANCH_CONFIG, STATION_CONFIG, TABLE_CONFIG, FLOOR_AREA_CONFIG, MODIFIER_GROUP_CONFIG, SETTINGS_CONFIG];

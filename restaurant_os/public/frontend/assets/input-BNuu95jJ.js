@@ -1,0 +1,6 @@
+import{c as d,k as o}from"./index-DqST2wH2.js";import{j as t}from"./vendor-frappe-DFxqJRi9.js";import{r as n}from"./vendor-react-NulDNQOh.js";/**
+ * @license lucide-react v0.441.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const x=d("Printer",[["path",{d:"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2",key:"143wyd"}],["path",{d:"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6",key:"1itne7"}],["rect",{x:"6",y:"14",width:"12",height:"8",rx:"1",key:"1ue0tg"}]]),l=n.forwardRef(({className:s,error:e,type:r="text",...i},a)=>t.jsxs("div",{className:"w-full",children:[t.jsx("input",{ref:a,type:r,className:o("flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-100 disabled:bg-muted/50 disabled:text-foreground dark:disabled:bg-white/[0.04]",e&&"border-destructive focus-visible:ring-destructive",s),...i}),e&&t.jsx("p",{className:"mt-1 text-xs text-destructive",children:e})]}));l.displayName="Input";export{l as I,x as P};
