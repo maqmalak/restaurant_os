@@ -11,6 +11,7 @@ const KDSPage = lazy(() => import("@/pages/Kitchen/KDSPage"));
 const RiderPage = lazy(() => import("@/pages/Delivery/RiderPage"));
 const TrackPage = lazy(() => import("@/pages/Delivery/TrackPage"));
 const OrderSitePage = lazy(() => import("@/pages/Online/OrderSitePage"));
+const SitePage = lazy(() => import("@/pages/Site/SitePage"));
 const KioskPage = lazy(() => import("@/pages/Online/KioskPage"));
 const CustomerDisplayPage = lazy(() => import("@/pages/POS/CustomerDisplayPage"));
 const PayPage = lazy(() => import("@/pages/Online/PayPage"));
@@ -37,6 +38,8 @@ export default function App() {
     <AppProviders>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        {/* public: the MicroMax POS website */}
+        <Route path="/" element={<Suspense fallback={<FullPageLoader />}><SitePage /></Suspense>} />
         {/* public: the customer's tracking link */}
         <Route path="/track/:key" element={<Suspense fallback={<FullPageLoader />}><TrackPage /></Suspense>} />
         <Route path="/order" element={<Suspense fallback={<FullPageLoader />}><OrderSitePage /></Suspense>} />
