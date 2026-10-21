@@ -305,7 +305,7 @@ function SettleDialog({ table, onClose, onDone }: { table: TableRow; onClose: ()
   };
   return (
     <Dialog open onClose={onClose} title={`Settle table ${table.table_number}`} size="sm">
-      <div className="mb-3 rounded-xl bg-gradient-to-r from-primary to-violet-700 p-4 text-white">
+      <div className="mb-3 rounded-xl bg-gradient-to-r from-[#2b1f12] via-[#7a5218] to-[#c4862a] p-4 text-white">
         <div className="text-xs uppercase tracking-wide text-white/75">Amount to pay</div>
         <div className="text-3xl font-extrabold">{formatMoney(total)}</div>
       </div>

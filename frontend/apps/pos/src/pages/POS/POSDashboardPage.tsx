@@ -32,10 +32,11 @@ interface Dash {
 }
 
 // Validated categorical palette (dataviz reference): fixed order, never cycled; light / dark steps.
-const CAT_LIGHT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
-const CAT_DARK = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"];
-// Sequential blue ramp for the heatmap (light → dark).
-const SEQ = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"];
+// MicroMax gold first; order validated with the dataviz checker (adjacent pairs, light #fdfbf7 / dark #1d1813 cards).
+const CAT_LIGHT = ["#b8791f", "#2a78d6", "#1baf7a", "#eb6834", "#4a3aa7", "#e87ba4", "#008300", "#e34948"];
+const CAT_DARK = ["#c4862a", "#3987e5", "#199e70", "#d95926", "#9085e9", "#d55181", "#008300", "#e66767"];
+// Sequential gold ramp for the heatmap (light → dark).
+const SEQ = ["#fbf0dc", "#f5dcab", "#ecc277", "#dfa547", "#c4862a", "#9a6216", "#6b420c"];
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -76,13 +77,13 @@ export default function POSDashboardPage() {
     <div className="space-y-5">
       {/* header + filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-600 text-white shadow-lg shadow-primary/30 ring-1 ring-inset ring-white/20"><Store className="h-5 w-5" /></span>
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#d6993a] to-[#9a6216] text-white shadow-lg shadow-primary/30 ring-1 ring-inset ring-white/20"><Store className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-bold leading-tight">Point of Sale insights</h1>
           <p className="text-xs text-muted-foreground">{company}{d ? ` · ${fmtDay(d.range.from)} – ${fmtDay(d.range.to)} (${d.range.days} day${d.range.days > 1 ? "s" : ""}) vs ${fmtDay(d.range.prev_from)} – ${fmtDay(d.range.prev_to)}` : ""}</p>
         </div>
         <button type="button" onClick={() => void mutate()} className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-sm font-medium hover:bg-muted"><RefreshCw className={cn("h-4 w-4", isValidating && "animate-spin")} /> Refresh</button>
-        <Link to="/pos/terminal" className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-violet-600 px-4 text-sm font-bold text-white shadow-lg shadow-primary/30 hover:brightness-110"><ShoppingCart className="h-4 w-4" /> Open terminal</Link>
+        <Link to="/pos/terminal" className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#d6993a] to-[#9a6216] px-4 text-sm font-bold text-white shadow-lg shadow-primary/30 hover:brightness-110"><ShoppingCart className="h-4 w-4" /> Open terminal</Link>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm">
@@ -127,7 +128,7 @@ export default function POSDashboardPage() {
 
           {/* range KPIs */}
           <div className="grid gap-3 lg:grid-cols-[1.3fr_2fr]">
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-teal-600 to-violet-700 p-5 text-white shadow-lg shadow-primary/25">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#2b1f12] via-[#7a5218] to-[#c4862a] p-5 text-white shadow-lg shadow-primary/25">
               <span aria-hidden className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/15 blur-2xl" />
               <div className="relative text-[11px] font-bold uppercase tracking-[0.18em] text-white/75">Net sales · selected range</div>
               <div className="relative mt-1 text-4xl font-extrabold tabular-nums">{money(s.net)}</div>

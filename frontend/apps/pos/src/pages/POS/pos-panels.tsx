@@ -97,9 +97,9 @@ export function InvoicesDialog({ profile, money, online, onClose, onResume, init
   return (
     <Dialog open onClose={onClose} size="xl" className="max-w-6xl sm:mt-6">
       {/* header */}
-      <div className="-mx-5 -mt-5 mb-4 border-b border-border bg-gradient-to-r from-teal-500/10 via-transparent to-sky-500/10 px-5 py-4">
+      <div className="-mx-5 -mt-5 mb-4 border-b border-border bg-gradient-to-r from-[#e59a3a]/10 via-transparent to-[#e59a3a]/5 px-5 py-4">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-lg shadow-teal-500/30 ring-1 ring-inset ring-white/20"><ReceiptText className="h-5 w-5" /></span>
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#d6993a] to-[#9a6216] text-white shadow-lg shadow-teal-500/30 ring-1 ring-inset ring-white/20"><ReceiptText className="h-5 w-5" /></span>
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-semibold leading-tight">Invoice Management</h2>
             <p className="text-xs text-muted-foreground">Track recent sales, collect unpaid balances and reopen saved work · {profile.name}</p>
@@ -411,7 +411,7 @@ export function SyncDialog({ sync, profile, money, bundle, onRefreshBundle, onCl
         {/* offline data */}
         <div className="rounded-2xl border border-border bg-gradient-to-br from-indigo-500/[0.08] to-transparent p-4">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/30"><Database className="h-5 w-5" /></span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#d6993a] to-[#9a6216] text-white shadow-md shadow-indigo-500/30"><Database className="h-5 w-5" /></span>
             <div className="min-w-0 flex-1">
               <div className="text-sm font-bold">Offline data · {profile.name}</div>
               <div className="text-xs text-muted-foreground">{bundle ? `Cached ${ago(bundle.generated_at)} · ${new Date(bundle.generated_at.replace(" ", "T")).toLocaleString()}` : "Nothing cached on this device yet"}</div>
@@ -419,7 +419,7 @@ export function SyncDialog({ sync, profile, money, bundle, onRefreshBundle, onCl
             <Button variant="outline" size="sm" disabled={!sync.online || refreshing} onClick={() => { setRefreshing(true); void onRefreshBundle().finally(() => setRefreshing(false)); }}>
               <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} /> Refresh data</Button>
             <button type="button" disabled={!sync.online || sync.syncing || !sync.queue.length} onClick={() => void sync.sync()}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-gradient-to-r from-primary to-violet-600 px-3.5 text-sm font-semibold text-white shadow-md shadow-primary/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:from-muted disabled:to-muted disabled:text-muted-foreground disabled:shadow-none">
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#d6993a] to-[#9a6216] px-3.5 text-sm font-semibold text-white shadow-md shadow-primary/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:from-muted disabled:to-muted disabled:text-muted-foreground disabled:shadow-none">
               {sync.syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Sync now</button>
           </div>
           {bundle && (

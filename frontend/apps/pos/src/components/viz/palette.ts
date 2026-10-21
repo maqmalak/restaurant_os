@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 
 /**
- * Chart colours (dataviz reference palette, slots 1–3 validated all-pairs against this app's card surfaces:
- * light #ffffff, dark #121d2e). Slot 3 (aqua) is below 3:1 on white → every chart ships a table / direct labels.
+ * Chart colours — MicroMax gold first (validated with the dataviz checker against the warm card surfaces: light #fdfbf7,
+ * dark #1d1813; all checks pass, adjacent pairs). Slot 3 (green) is below 3:1 on the light card → every chart ships a
+ * table / direct labels.
  * Text never wears a series colour: axes and labels use the theme's muted / foreground ink.
  */
-const LIGHT = { s1: "#2a78d6", s2: "#eb6834", s3: "#1baf7a", neutral: "#9ca3af", grid: "#e5e7eb" };
-const DARK = { s1: "#3987e5", s2: "#d95926", s3: "#199e70", neutral: "#6b7280", grid: "#243047" };
+const LIGHT = { s1: "#b8791f", s2: "#2a78d6", s3: "#1baf7a", neutral: "#a89b88", grid: "#ece4d6" };
+const DARK = { s1: "#c4862a", s2: "#3987e5", s3: "#199e70", neutral: "#7a6d5c", grid: "#2e261e" };
 
 export type Viz = typeof LIGHT & { ink: string; muted: string };
 

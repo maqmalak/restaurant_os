@@ -75,7 +75,7 @@ export function ActivityChain({ doctype, docname, refreshKey = 0 }: { doctype: s
     <Card className="space-y-4 rounded-2xl p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/30"><Blocks className="size-4" /></span>
+          <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-[#d6993a] to-[#9a6216] text-white shadow-md shadow-indigo-500/30"><Blocks className="size-4" /></span>
           <div>
             <h3 className="text-sm font-semibold">Activity chain</h3>
             <p className="text-xs text-muted-foreground">

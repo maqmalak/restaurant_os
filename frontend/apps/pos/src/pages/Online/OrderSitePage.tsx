@@ -64,7 +64,7 @@ export default function OrderSitePage() {
 
   return (
     <div className="min-h-screen bg-background pb-28">
-      <header className="relative overflow-hidden bg-gradient-to-br from-primary to-violet-700 px-4 pb-6 pt-5 text-white">
+      <header className="relative overflow-hidden bg-gradient-to-br from-[#2b1f12] via-[#7a5218] to-[#c4862a] px-4 pb-6 pt-5 text-white">
         <div className="mx-auto flex max-w-5xl items-center gap-3">
           {menu.logo && <img src={menu.logo} alt="" className="h-12 w-auto rounded-lg bg-white p-1.5" />}
           <div className="min-w-0 flex-1"><h1 className="truncate text-2xl font-extrabold">{menu.restaurant}</h1>

@@ -58,7 +58,7 @@ export default function TrackPage() {
           <button onClick={() => void payAgain()} className="mt-3 h-11 w-full rounded-xl bg-primary font-bold text-primary-foreground">Pay now</button>
         </div>
       )}
-      <div className="mx-4 rounded-2xl bg-gradient-to-br from-primary to-violet-700 p-5 text-white shadow-lg">
+      <div className="mx-4 rounded-2xl bg-gradient-to-br from-[#2b1f12] via-[#7a5218] to-[#c4862a] p-5 text-white shadow-lg">
         <div className="text-xs uppercase tracking-wide text-white/75">{t.cancelled ? "Order cancelled" : delivered ? (t.order_type === "Delivery" ? "Delivered" : "Collected") : t.order_type === "Delivery" ? "Arriving in" : "Ready for pickup in"}</div>
         <div className="text-3xl font-extrabold">{t.cancelled ? "—" : delivered ? "Enjoy your meal!" : `${t.eta_minutes} min`}</div>
         {t.delivery_code && !t.cancelled && <div className="mt-3 rounded-xl bg-white/15 px-3 py-2 text-sm">Give this code to the rider: <b className="ml-1 font-mono text-lg tracking-[0.3em]">{t.delivery_code}</b></div>}

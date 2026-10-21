@@ -4,32 +4,32 @@
 
 @layer base {
   :root {
-    --background: 220 24% 95%; /* soft grey-blue page so white cards stand out */
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 20% 36%; /* ~slate-600: secondary text readable (was 47%) */
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --background: 40 33% 96%; /* warm ivory page (MicroMax gold theme) so the cards stand out */
+    --foreground: 30 25% 10%;
+    --card: 40 60% 99.5%;
+    --card-foreground: 30 25% 10%;
+    --popover: 40 60% 99.5%;
+    --popover-foreground: 30 25% 10%;
+    --primary: 37 78% 48%;
+    --primary-foreground: 30 60% 7%;
+    --secondary: 38 32% 92%;
+    --secondary-foreground: 30 25% 12%;
+    --muted: 38 28% 92%;
+    --muted-foreground: 30 14% 33%; /* ~slate-600: secondary text readable (was 47%) */
+    --accent: 38 50% 90%;
+    --accent-foreground: 30 25% 12%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 215 24% 78%; /* card and table edges visible on the light background (was 83%) */
+    --border: 35 24% 80%; /* card and table edges visible on the light background (was 83%) */
     /* inputs: own surface + a clearly visible border (requested: visible fields in light and dark) */
-    --input: 215 16% 62%;
+    --input: 33 18% 62%;
     --input-bg: 0 0% 100%;
     --success: 142 64% 34%;
     --warning: 32 95% 44%;
-    --ring: 221 83% 53%;
-    --sidebar: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-muted: 217 16% 60%;
+    --ring: 37 78% 48%;
+    --sidebar: 25 18% 7%;
+    --sidebar-foreground: 38 30% 94%;
+    --sidebar-muted: 35 14% 68%;
     --radius: 0.5rem;
 
     color-scheme: light;
@@ -37,31 +37,31 @@
 
   .dark {
     /* Deep-navy / teal enterprise theme */
-    --background: 221 66% 6%;
-    --foreground: 220 20% 96%;
-    --card: 218 44% 12.5%;
-    --card-foreground: 220 20% 96%;
-    --popover: 218 48% 12%;
-    --popover-foreground: 220 20% 96%;
-    --primary: 173 80% 40%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 66% 14%;
-    --secondary-foreground: 220 13% 91%;
-    --muted: 218 40% 17%;
-    --muted-foreground: 218 22% 77%;
-    --accent: 220 66% 14%;
-    --accent-foreground: 220 13% 91%;
+    --background: 25 20% 5%;
+    --foreground: 38 35% 94%;
+    --card: 28 18% 9.5%;
+    --card-foreground: 38 35% 94%;
+    --popover: 28 20% 10%;
+    --popover-foreground: 38 35% 94%;
+    --primary: 38 87% 66%;
+    --primary-foreground: 30 60% 7%;
+    --secondary: 28 18% 13%;
+    --secondary-foreground: 38 25% 90%;
+    --muted: 28 16% 15%;
+    --muted-foreground: 35 22% 76%;
+    --accent: 30 20% 15%;
+    --accent-foreground: 38 25% 92%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 218 30% 28%;
-    --input: 216 20% 50%;
-    --input-bg: 222 50% 8.5%; /* darker than cards so fields read as inset wells */
+    --border: 30 16% 22%;
+    --input: 32 14% 42%;
+    --input-bg: 25 22% 6.5%; /* darker than cards so fields read as inset wells */
     --success: 142 60% 48%;
     --warning: 35 92% 55%;
-    --ring: 173 80% 40%;
-    --sidebar: 221 67% 5%;
-    --sidebar-foreground: 220 13% 91%;
-    --sidebar-muted: 218 22% 77%;
+    --ring: 38 87% 60%;
+    --sidebar: 25 22% 4%;
+    --sidebar-foreground: 38 30% 92%;
+    --sidebar-muted: 35 18% 72%;
 
     color-scheme: dark;
   }

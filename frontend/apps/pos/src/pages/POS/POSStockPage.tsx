@@ -41,7 +41,7 @@ export default function POSStockPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-lg shadow-teal-500/30 ring-1 ring-inset ring-white/20"><PackagePlus className="h-5 w-5" /></span>
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#d6993a] to-[#9a6216] text-white shadow-lg shadow-teal-500/30 ring-1 ring-inset ring-white/20"><PackagePlus className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-semibold leading-tight">Receive stock</h1>
           <p className="text-xs text-muted-foreground">{profile.name} · into <b className="text-foreground">{profile.warehouse}</b></p>

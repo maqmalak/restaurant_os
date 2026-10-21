@@ -336,7 +336,7 @@ export default function POSTerminalPage() {
       {/* top bar */}
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 shadow-sm">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-600 text-white shadow-lg shadow-primary/30 ring-1 ring-inset ring-white/20"><Store className="h-5 w-5" /></span>
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#d6993a] to-[#9a6216] text-white shadow-lg shadow-primary/30 ring-1 ring-inset ring-white/20"><Store className="h-5 w-5" /></span>
           <div className="leading-tight">
             <div className="flex items-center gap-1.5 text-sm font-bold">{profile?.name}<span className="rounded-full bg-primary/10 px-1.5 py-px text-[9px] font-semibold text-primary">POS</span></div>
             <div className="text-[11px] text-muted-foreground">{profile?.warehouse}</div>
@@ -432,7 +432,7 @@ export default function POSTerminalPage() {
                         <span className="mt-0.5 block text-sm font-bold tabular-nums text-teal-500 dark:text-teal-400">{money(it.price_list_rate)}
                           {it.uom && it.uom !== "Nos" ? <span className="text-[11px] font-medium text-muted-foreground"> / {it.uom}</span> : null}</span>
                       </span>
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 text-white shadow-md shadow-teal-500/30 transition-transform group-hover:scale-110 group-active:scale-95">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#f7cd7a] to-[#e08a2a] text-[#1a1208] shadow-md shadow-[#e59a3a]/30 transition-transform group-hover:scale-110 group-active:scale-95">
                         <Plus className="h-5 w-5" /></span>
                     </span>
                   </button>
@@ -665,7 +665,7 @@ function InstallAppBtn() {
   if (!canInstall) return null;
   return (
     <button type="button" onClick={() => void install().then((ok) => ok && toast.success("Restaurant OS POS installed — open it from your desktop or taskbar"))}
-      className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-teal-500 to-violet-600 px-3 text-xs font-bold text-white shadow-md shadow-teal-500/30 hover:brightness-110"
+      className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#d6993a] to-[#9a6216] px-3 text-xs font-bold text-white shadow-md shadow-teal-500/30 hover:brightness-110"
       title="Install Restaurant OS POS as a desktop app">
       <MonitorDown className="h-4 w-4" /><span className="hidden lg:inline">Install app</span>
     </button>
@@ -1168,7 +1168,7 @@ function OpenShift({ ctx, onOpened }: { ctx: Ctx; onOpened: () => void }) {
   return (
     <div className="mx-auto mt-6 max-w-xl overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
       {/* title */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary via-teal-600 to-violet-700 px-6 py-6 text-white">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#2b1f12] via-[#7a5218] to-[#c4862a] px-6 py-6 text-white">
         <span aria-hidden className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/15 blur-3xl" />
         <span aria-hidden className="pointer-events-none absolute -bottom-20 left-6 h-40 w-40 rounded-full bg-violet-400/30 blur-3xl" />
         <div className="relative flex items-center gap-4">
@@ -1405,7 +1405,7 @@ function PayDialog({ profile, total, payload, draft, money, customer, isWalkIn, 
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button type="button" disabled={!receipt} onClick={() => receipt && printReceipt(receipt, printer)}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-base font-bold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110 disabled:opacity-50"><Printer className="h-5 w-5" /> Print now</button>
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#d6993a] to-[#9a6216] text-base font-bold text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110 disabled:opacity-50"><Printer className="h-5 w-5" /> Print now</button>
             <button type="button" onClick={onDone} autoFocus
               className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition hover:brightness-110"><Plus className="h-5 w-5" /> New order</button>
           </div>
@@ -1417,7 +1417,7 @@ function PayDialog({ profile, total, payload, draft, money, customer, isWalkIn, 
       ) : (
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (ready && !busy) void complete(); }}>
           {/* hero */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-teal-600 to-violet-700 p-5 text-white shadow-lg shadow-primary/30">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#2b1f12] via-[#7a5218] to-[#c4862a] p-5 text-white shadow-lg shadow-primary/30">
             <span aria-hidden className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/15 blur-2xl" />
             <span aria-hidden className="pointer-events-none absolute -bottom-16 left-10 h-36 w-36 rounded-full bg-violet-400/30 blur-2xl" />
             <div className="relative flex items-end justify-between gap-3">
