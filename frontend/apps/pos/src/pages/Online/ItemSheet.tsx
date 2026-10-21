@@ -11,7 +11,12 @@ export function ItemSheet({ item, currency, onClose, onAdd, big }: { item: MenuI
   const [notes, setNotes] = useState("");
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onClose]);
   const toggle = (group: string, name: string, max: number) => setMods((m) => {
-    if (m.some((c) => c.group === group && c.name === name)) return m.filter((c) => !(c.group === group && c.name === name));
+    const g = item.modifiers.find((x) => x.group === group);
+    if (m.some((c) => c.group === group && c.name === name)) {
+      // a required single choice stays chosen (tapping it again doesn't empty it)
+      if (max === 1 && (g?.required || g?.min)) return m;
+      return m.filter((c) => !(c.group === group && c.name === name));
+    }
     if (max === 1) return [...m.filter((c) => c.group !== group), { group, name }];        // single choice: swap
     if (max > 1 && m.filter((c) => c.group === group).length >= max) return m;              // limit reached
     return [...m, { group, name }];
