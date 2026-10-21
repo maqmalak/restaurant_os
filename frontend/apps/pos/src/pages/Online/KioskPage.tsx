@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { ArrowLeft, Hand, Minus, Plus, RotateCcw, ShoppingBag, Sparkles, Store, Trash2, Utensils, UtensilsCrossed } from "lucide-react";
+import { ArrowLeft, Check, Hand, Minus, Plus, RotateCcw, ShoppingBag, Sparkles, Store, Trash2, Utensils, UtensilsCrossed } from "lucide-react";
 import { humanizeError, postCall } from "@/services/frappe";
 import { cn } from "@/utils/cn";
 import { ItemSheet } from "./ItemSheet";
@@ -14,6 +14,14 @@ ${SERIF_FONT}
 .kiosk .serif { font-family: Fraunces, Georgia, serif; letter-spacing: -0.01em; }
 .kiosk .gold-grad { background: linear-gradient(120deg, #fde3a7, #f5c46b 45%, #e59a3a); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .kiosk .glass { background: linear-gradient(160deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+@keyframes kiosk-zoom { from { transform: scale(1.05); } to { transform: scale(1.18) translate(-1.5%, -1%); } }
+@keyframes kiosk-fadein { from { opacity: 0; } to { opacity: 1; } }
+@keyframes kiosk-pulse { 0%, 100% { box-shadow: 0 25px 60px -20px rgba(229,154,58,.9), 0 0 0 0 rgba(245,196,107,.45); } 50% { box-shadow: 0 25px 60px -20px rgba(229,154,58,.9), 0 0 0 18px rgba(245,196,107,0); } }
+@keyframes kiosk-count { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.kiosk .kiosk-zoom { animation: kiosk-zoom 8s ease-out forwards; }
+.kiosk .kiosk-fade { animation: kiosk-fadein 1.2s ease both; }
+.kiosk .kiosk-pulse { animation: kiosk-pulse 2.4s ease-in-out infinite; }
+.kiosk .kiosk-count { transform-origin: left; animation: kiosk-count 25s linear forwards; }
 @keyframes kiosk-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 .kiosk .rise { animation: kiosk-rise .5s cubic-bezier(.2,.7,.2,1) both; }
 .kiosk ::-webkit-scrollbar { width: 0; height: 0; }
@@ -52,7 +60,7 @@ export default function KioskPage() {
     return () => clearTimeout(t);
   }, [cart]);
 
-  if (!menu) return <div className="flex h-screen items-center justify-center bg-neutral-950 text-white">Loading…</div>;
+  if (!menu) return <div className="flex h-screen items-center justify-center bg-[#0b0a09] text-lg text-[#f5c46b]/80">Loading the menu…</div>;
   const cur = menu.currency;
   const category = cat || menu.categories[0];
   const count = cart.reduce((s, l) => s + l.qty, 0);
@@ -65,16 +73,13 @@ export default function KioskPage() {
     } catch (e) { toast.error(humanizeError(e)); } finally { setBusy(false); }
   };
 
-  if (!menu.kiosk_open) return <div className="flex h-screen items-center justify-center bg-neutral-950 text-3xl text-white">Please order at the counter</div>;
-
-  if (stage === "welcome") return (
-    <button onClick={() => setStage("type")} className="relative flex h-screen w-full flex-col items-center justify-center gap-8 overflow-hidden bg-gradient-to-br from-primary via-teal-700 to-violet-800 text-white">
-      {menu.logo && <img src={menu.logo} alt="" className="h-28 w-auto rounded-2xl bg-white p-3 shadow-2xl" />}
-      <h1 className="text-6xl font-extrabold">{menu.restaurant}</h1>
-      <div className="flex animate-pulse items-center gap-3 rounded-full bg-white/15 px-10 py-5 text-3xl font-bold"><Hand className="h-9 w-9" /> Touch to order</div>
-      <p className="text-xl text-white/70">Order here · pay at the counter</p>
-    </button>
+  if (!menu.kiosk_open) return (
+    <div className="kiosk flex h-screen flex-col items-center justify-center gap-4 bg-[#0b0a09] text-[#f6efe4]"><style>{KIOSK_STYLE}</style>
+      {menu.logo && <img src={menu.logo} alt="" className="h-16 w-auto rounded-2xl bg-white/95 px-3 py-2" />}
+      <div className="serif text-5xl font-semibold">Please order at the counter</div><div className="text-xl text-[#d8ccb9]">Our team will be happy to help.</div></div>
   );
+
+  if (stage === "welcome") return <Welcome menu={menu} onStart={() => setStage("type")} />;
 
   if (stage === "type") {
     const hero = menu.items.find((i) => i.image && !i.sold_out)?.image;
@@ -108,14 +113,7 @@ export default function KioskPage() {
     );
   }
 
-  if (stage === "done" && done) return (
-    <button onClick={reset} className="flex h-screen w-full flex-col items-center justify-center gap-6 bg-gradient-to-br from-green-600 to-teal-700 text-white">
-      <p className="text-3xl">Your order number</p>
-      <div className="text-[10rem] font-black leading-none">{done.number}</div>
-      <p className="text-4xl font-bold">Please pay {money(done.total, cur)} at the counter</p>
-      <p className="text-2xl text-white/80">We start cooking as soon as you've paid. Thank you!</p>
-    </button>
-  );
+  if (stage === "done" && done) return <Done number={done.number} total={money(done.total, cur)} name={name} onDone={reset} />;
 
   const inCat = menu.items.filter((i) => i.item_group === category);
   return (
@@ -215,7 +213,7 @@ export default function KioskPage() {
           ))}
         </div>
         <div className="space-y-3 border-t border-white/[0.06] p-5">
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={30} placeholder="Your name (we'll call it out)" className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-lg placeholder:text-white/35 focus:border-[#f5c46b]/50 focus:outline-none" />
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={30} placeholder="Your name (we'll call it out)" className="h-14 w-full rounded-2xl border !border-white/10 !bg-white/[0.04] px-4 text-lg text-white placeholder:text-[#a89a87] !shadow-none !outline-none focus:!border-[#f5c46b]/60 [color-scheme:dark]" />
           {quote && <div className="space-y-1 text-lg">
             {quote.discount > 0 && <div className="flex justify-between text-emerald-300"><span>Offer</span><span>−{money(quote.discount, cur)}</span></div>}
             {quote.tax > 0 && <div className="flex justify-between text-white/50"><span>Tax</span><span>{money(quote.tax, cur)}</span></div>}
@@ -225,8 +223,66 @@ export default function KioskPage() {
             {busy ? "Sending…" : `Order · pay at counter`}</button>
         </div>
       </aside>
-      {open && <ItemSheet big item={open} currency={cur} onClose={() => setOpen(null)}
+      {open && <ItemSheet big warm item={open} currency={cur} onClose={() => setOpen(null)}
         onAdd={(qty, modifiers) => { setCart((c) => [...c, { key: crypto.randomUUID(), item: open, qty, modifiers }]); setOpen(null); }} />}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ welcome: full-screen dishes, gold call to action */
+function Welcome({ menu, onStart }: { menu: NonNullable<ReturnType<typeof useMenu>["menu"]>; onStart: () => void }) {
+  const dishes = menu.items.filter((i) => i.image && !i.sold_out);
+  const [i, setI] = useState(0);
+  useEffect(() => { if (dishes.length < 2) return; const t = setInterval(() => setI((x) => (x + 1) % dishes.length), 6500); return () => clearInterval(t); }, [dishes.length]);
+  const d = dishes[i % Math.max(dishes.length, 1)];
+  return (
+    <button onClick={onStart} className="kiosk relative flex h-screen w-full flex-col overflow-hidden bg-[#0b0a09] text-left text-[#f6efe4]">
+      <style>{KIOSK_STYLE}</style>
+      {d && <div key={d.item_code} className="kiosk-fade absolute inset-0"><img src={d.image} alt="" className="kiosk-zoom h-full w-full object-cover" /></div>}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0b0a09] via-[#0b0a09]/45 to-[#0b0a09]/70" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#0b0a09]/80 via-transparent to-transparent" />
+      <div className="relative flex items-center justify-between px-12 pt-10">
+        {menu.logo ? <img src={menu.logo} alt="" className="h-16 w-auto rounded-2xl bg-white/95 px-3 py-2 shadow-2xl" /> : <span />}
+        <span className="rounded-full border border-white/15 bg-black/30 px-5 py-2 text-base font-medium text-[#efe5d6] backdrop-blur">Order here · pay at the counter</span>
+      </div>
+      <div className="relative mt-auto px-12 pb-14">
+        <div className="text-sm font-bold uppercase tracking-[0.35em] text-[#f5c46b]">Welcome to</div>
+        <h1 className="serif mt-3 text-[clamp(3.5rem,7vw,6.5rem)] font-semibold leading-[0.95]">{menu.restaurant}</h1>
+        {d && <p key={`n-${d.item_code}`} className="rise mt-5 text-2xl text-[#e8dccb]">Today: <span className="font-semibold text-white">{d.item_name}</span> · <span className="gold-grad font-semibold">{money(d.price, menu.currency)}</span></p>}
+        <div className="mt-10 flex flex-wrap items-center gap-6">
+          <span className="kiosk-pulse inline-flex items-center gap-4 rounded-full bg-gradient-to-r from-[#f7cd7a] to-[#e59a3a] px-12 py-6 text-3xl font-bold text-[#1a1208] shadow-[0_25px_60px_-20px_rgba(229,154,58,.9)]">
+            <Hand className="h-9 w-9" /> Touch to order</span>
+          {menu.offers && menu.offers.length > 0 && (
+            <div className="flex flex-wrap gap-3">{menu.offers.slice(0, 3).map((o) => (
+              <span key={o.title} className="inline-flex items-center gap-2 rounded-full border border-[#f5c46b]/35 bg-black/35 px-5 py-3 text-lg font-semibold text-[#fde3a7] backdrop-blur"><Sparkles className="h-5 w-5 text-[#f5c46b]" />{o.title}</span>
+            ))}</div>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ order number */
+function Done({ number, total, name, onDone }: { number: string; total: string; name: string; onDone: () => void }) {
+  return (
+    <button onClick={onDone} className="kiosk relative flex h-screen w-full flex-col items-center justify-center overflow-hidden bg-[#0b0a09] px-10 text-center text-[#f6efe4]">
+      <style>{KIOSK_STYLE}</style>
+      <div className="pointer-events-none absolute left-1/2 top-1/3 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e59a3a]/15 blur-[120px]" />
+      <span className="rise relative flex h-20 w-20 items-center justify-center rounded-full bg-emerald-400/15 ring-2 ring-emerald-400/60"><Check className="h-10 w-10 text-emerald-300" strokeWidth={2.5} /></span>
+      <div className="rise relative mt-6 text-lg font-bold uppercase tracking-[0.35em] text-[#f5c46b]" style={{ animationDelay: ".1s" }}>{name ? `Thank you, ${name.split(" ")[0]}` : "Thank you"} · your order number</div>
+      <div className="serif rise relative mt-2 text-[clamp(8rem,18vw,13rem)] font-semibold leading-none" style={{ animationDelay: ".18s" }}><span className="gold-grad">{number}</span></div>
+      <div className="rise relative mt-6 rounded-3xl border border-white/10 bg-white/[0.04] px-10 py-5 text-3xl font-semibold" style={{ animationDelay: ".26s" }}>Please pay <span className="gold-grad">{total}</span> at the counter</div>
+      <div className="rise relative mt-12 grid max-w-4xl grid-cols-3 gap-5" style={{ animationDelay: ".34s" }}>
+        {[["1", "Pay at the counter", "Show your number"], ["2", "We start cooking", "Fresh, right after payment"], ["3", "Collect your food", "We'll call your number"]].map(([n, t, d]) => (
+          <div key={n} className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-left">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#f7cd7a] to-[#e59a3a] text-lg font-bold text-[#1a1208]">{n}</span>
+            <div className="mt-4 text-xl font-semibold">{t}</div><div className="mt-1 text-base text-[#d2c5b1]">{d}</div>
+          </div>
+        ))}
+      </div>
+      <div className="relative mt-12 h-1.5 w-72 overflow-hidden rounded-full bg-white/10"><div className="kiosk-count h-full w-full bg-[#f5c46b]" /></div>
+      <div className="relative mt-3 text-sm text-[#bfb29f]">Tap anywhere to start a new order</div>
+    </button>
   );
 }
