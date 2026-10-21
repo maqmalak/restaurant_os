@@ -129,7 +129,7 @@ export default function SitePage() {
             </div>
           </div>
           <div className="relative">
-            <Frame src={shot("terminal")} alt="MicroMax POS counter terminal" className="rise relative z-10" />
+            <Frame src={shot("terminal-clean")} alt="MicroMax POS counter terminal" className="rise relative z-10" />
             <Phone src={shot("order-phone")} alt="Online ordering on a phone" className="float absolute -bottom-14 -left-6 z-20 hidden w-40 sm:block lg:-left-14 lg:w-48" />
             <div className="glass float absolute -right-3 -top-8 z-20 hidden rounded-2xl px-4 py-3 text-sm shadow-2xl sm:block" style={{ animationDelay: "1.5s" }}>
               <div className="flex items-center gap-2.5"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-300"><ChefHat className="h-5 w-5" /></span>
