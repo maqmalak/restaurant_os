@@ -227,6 +227,7 @@ def deliver(rider, assignment, otp=None, photo=None, cash=0):
 	elif not photo:
 		frappe.throw(_("Enter the delivery code or attach a photo of the handover."))
 	da.proof_photo = photo or da.proof_photo
+	order.flags.ros_rider_assignment = da.name                # this assignment is closed below, with the cash
 	svc.set_status(order, "Delivered")
 	from restaurant_os.session import as_system
 
@@ -244,6 +245,30 @@ def deliver(rider, assignment, otp=None, photo=None, cash=0):
 		rider.db_set("status", "Available" if rider.status != "Off Duty" else "Off Duty")
 	_publish(order, "delivered", rider.name)
 	return invoice
+
+
+OPEN = ("Offered", "Accepted", "Picked Up")
+FINISHED = {"Delivered": "Delivered", "Completed": "Delivered", "Cancelled": "Cancelled", "Rejected": "Cancelled", "Returned": "Cancelled"}
+
+
+def close_assignments(order, skip=None):
+	"""The order finished or was cancelled some other way than the rider app (KDS, dispatch, desk): close its open rider
+	assignments — the current one as Delivered (or Cancelled), stray older ones as Cancelled — and free the riders."""
+	outcome = FINISHED.get(order.status)
+	if not outcome:
+		return
+	riders = set()
+	for da in frappe.get_all("Delivery Assignment", {"order": order.name, "status": ["in", list(OPEN)], "name": ["!=", skip or ""]}, ["name", "rider", "status"]):
+		mine = da.name == order.delivery_assignment and da.status in ("Accepted", "Picked Up")
+		values = {"status": outcome if mine else "Cancelled"}
+		if values["status"] == "Delivered":
+			values["delivered_at"] = now_datetime()
+		frappe.db.set_value("Delivery Assignment", da.name, values)
+		riders.add(da.rider)
+	for r in riders:
+		if r and not _active_count(r) and frappe.db.get_value("Rider", r, "status") == "On Delivery":
+			frappe.db.set_value("Rider", r, "status", "Available")
+		_publish(order, "closed", r)
 
 
 def _cod_payment(order, invoice, cash, rider):

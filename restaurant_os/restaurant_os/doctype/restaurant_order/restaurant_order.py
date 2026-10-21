@@ -42,6 +42,10 @@ class RestaurantOrder(Document):
 			self.stock_status, self.stock_error = "Posted", None
 
 	def on_update(self):
+		if self.status in ("Delivered", "Completed", "Cancelled", "Rejected", "Returned") and self.has_value_changed("status"):
+			from restaurant_os.services.riders import close_assignments
+
+			close_assignments(self, skip=self.flags.ros_rider_assignment)
 		if self.flags.ros_assign:
 			self.flags.ros_assign = False
 			from restaurant_os.services.orders import enqueue

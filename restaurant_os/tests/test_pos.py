@@ -503,6 +503,7 @@ class TestRestaurantPOS(IntegrationTestCase):
 			frappe.db.rollback(save_point="kds_check_in")
 
 	def _check_in_and_assign(self):
+		self._free_riders()
 		riders = frappe.get_all("Rider", {"branch": masters.BRANCH, "disabled": 0}, ["name", "user", "employee"])
 		from restaurant_os.api import riders as api
 
@@ -706,3 +707,24 @@ class TestRestaurantPOS(IntegrationTestCase):
 		items = self._as("cashier@saffrongrill.example", pos.stock_items, PROFILE, "tomato")["items"]
 		self.assertIn("Tomato", [i.item_code for i in items])
 		self.assertNotIn("Chicken Karahi", [i.item_code for i in pos.stock_items(PROFILE, "karahi")["items"]], "recipe dishes aren't stock")
+
+	def test_kds_delivered_closes_rider_assignment(self):
+		"""Finishing a delivery from the KDS (not the rider app) must close the rider's assignment and free the rider."""
+		from restaurant_os.api import riders as api
+
+		frappe.db.savepoint("kds_close")
+		try:
+			self._free_riders()
+			rider = frappe.get_all("Rider", {"branch": masters.BRANCH}, ["name", "user"], limit=1)[0]
+			self._as(rider.user, api.set_duty, 1)
+			o = api.simulate_delivery_order()
+			kds.assign_rider(o["order"], rider.name)
+			da = frappe.db.get_value("Restaurant Order", o["order"], "delivery_assignment")
+			self.assertEqual(frappe.db.get_value("Delivery Assignment", da, "status"), "Accepted")
+			while frappe.db.get_value("Restaurant Order", o["order"], "status") != "Delivered":
+				kds.advance(o["order"])
+			self.assertEqual(frappe.db.get_value("Delivery Assignment", da, "status"), "Delivered")
+			self.assertEqual(frappe.db.get_value("Rider", rider.name, "status"), "Available")
+			self.assertFalse(any(j["order"] == o["order"] for j in self._as(rider.user, api.me)["active"]), "no stale card in the rider app")
+		finally:
+			frappe.db.rollback(save_point="kds_close")
