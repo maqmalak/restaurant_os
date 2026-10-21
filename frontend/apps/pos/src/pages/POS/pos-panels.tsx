@@ -419,7 +419,7 @@ export function SyncDialog({ sync, profile, money, bundle, onRefreshBundle, onCl
             <Button variant="outline" size="sm" disabled={!sync.online || refreshing} onClick={() => { setRefreshing(true); void onRefreshBundle().finally(() => setRefreshing(false)); }}>
               <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} /> Refresh data</Button>
             <button type="button" disabled={!sync.online || sync.syncing || !sync.queue.length} onClick={() => void sync.sync()}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#d6993a] to-[#9a6216] px-3.5 text-sm font-semibold text-white shadow-md shadow-primary/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:from-muted disabled:to-muted disabled:text-muted-foreground disabled:shadow-none">
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#3092df] to-[#1bafb4] px-3.5 text-sm font-semibold text-white shadow-md shadow-primary/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:from-muted disabled:to-muted disabled:text-muted-foreground disabled:shadow-none">
               {sync.syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Sync now</button>
           </div>
           {bundle && (

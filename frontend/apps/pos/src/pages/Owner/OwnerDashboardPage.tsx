@@ -6,7 +6,8 @@ import {
   PackageX, Percent, Receipt, Star, Timer, Trash2, Wallet,
 } from "lucide-react";
 import { PageHeader } from "@/components/common/page-header";
-import { axis, useViz } from "@/components/viz/palette";
+import { axis, BAR_H, useViz } from "@/components/viz/palette";
+import { barDefs } from "@/components/viz/bar-defs";
 import { formatMoney } from "@/utils/currency";
 import { cn } from "@/utils/cn";
 
@@ -85,11 +86,12 @@ export default function OwnerDashboardPage() {
           {d.channels.length === 0 ? <Empty /> : (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={d.channels} layout="vertical" margin={{ top: 4, right: 48, left: 8, bottom: 0 }} barCategoryGap={6}>
+                {barDefs()}
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="channel" {...axis(v)} width={78} />
                 <Tooltip formatter={(x: number) => formatMoney(x)} cursor={{ fill: v.grid, opacity: 0.4 }}
                   contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
-                <Bar dataKey="amount" fill={v.s1} radius={[0, 4, 4, 0]} maxBarSize={18}
+                <Bar dataKey="amount" fill={BAR_H} radius={[0, 4, 4, 0]} maxBarSize={18}
                   label={{ position: "right", fill: v.muted, fontSize: 11, formatter: (x: number) => short(x) }} />
               </BarChart>
             </ResponsiveContainer>
@@ -113,12 +115,13 @@ export default function OwnerDashboardPage() {
           {d.kitchen_load.length === 0 ? <Empty text="Kitchen is clear" /> : (
             <ResponsiveContainer width="100%" height={Math.max(120, d.kitchen_load.length * 34 + 40)}>
               <BarChart data={d.kitchen_load} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }} barCategoryGap={8}>
+                {barDefs()}
                 <XAxis type="number" allowDecimals={false} {...axis(v)} />
                 <YAxis type="category" dataKey="station" {...axis(v)} width={110} />
                 <Tooltip cursor={{ fill: v.grid, opacity: 0.4 }} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
                 <Legend formatter={(n) => <span style={{ color: v.muted }}>{n === "queued" ? "Waiting" : "Cooking"}</span>} />
                 <Bar dataKey="queued" stackId="k" fill={v.s2} name="queued" maxBarSize={18} stroke="hsl(var(--card))" strokeWidth={2} />
-                <Bar dataKey="preparing" stackId="k" fill={v.s1} name="preparing" radius={[0, 4, 4, 0]} maxBarSize={18} stroke="hsl(var(--card))" strokeWidth={2} />
+                <Bar dataKey="preparing" stackId="k" fill={BAR_H} name="preparing" radius={[0, 4, 4, 0]} maxBarSize={18} stroke="hsl(var(--card))" strokeWidth={2} />
               </BarChart>
             </ResponsiveContainer>
           )}

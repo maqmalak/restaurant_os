@@ -10,8 +10,8 @@
     --card-foreground: 30 25% 10%;
     --popover: 40 60% 99.5%;
     --popover-foreground: 30 25% 10%;
-    --primary: 37 78% 48%;
-    --primary-foreground: 30 60% 7%;
+    --primary: 200 72% 47%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 38 32% 92%;
     --secondary-foreground: 30 25% 12%;
     --muted: 38 28% 92%;
@@ -26,7 +26,7 @@
     --input-bg: 0 0% 100%;
     --success: 142 64% 34%;
     --warning: 32 95% 44%;
-    --ring: 37 78% 48%;
+    --ring: 200 72% 47%;
     --sidebar: 25 18% 7%;
     --sidebar-foreground: 38 30% 94%;
     --sidebar-muted: 35 14% 68%;
@@ -43,8 +43,8 @@
     --card-foreground: 38 35% 94%;
     --popover: 28 20% 10%;
     --popover-foreground: 38 35% 94%;
-    --primary: 38 87% 66%;
-    --primary-foreground: 30 60% 7%;
+    --primary: 200 72% 47%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 28 18% 13%;
     --secondary-foreground: 38 25% 90%;
     --muted: 28 16% 15%;
@@ -58,7 +58,7 @@
     --input-bg: 25 22% 6.5%; /* darker than cards so fields read as inset wells */
     --success: 142 60% 48%;
     --warning: 35 92% 55%;
-    --ring: 38 87% 60%;
+    --ring: 200 72% 47%;
     --sidebar: 25 22% 4%;
     --sidebar-foreground: 38 30% 92%;
     --sidebar-muted: 35 18% 72%;
@@ -328,4 +328,13 @@
     box-shadow: 0 0 0 3px hsl(var(--ring) / 0.2);
   }
   .frappe-form label { @apply text-[12px] font-medium text-foreground/80; }
+}
+
+/* MicroMax action colour: the azure → teal gradient on buttons and active controls (brand gold stays for logo / headings). */
+@layer components {
+  button.bg-primary, a.bg-primary, [role="tab"].bg-primary, .btn-azure {
+    background-image: linear-gradient(135deg, #3092df 0%, #1bafb4 100%);
+    box-shadow: 0 8px 22px -10px rgb(33 150 207 / 0.75);
+  }
+  button.bg-primary:hover, a.bg-primary:hover, .btn-azure:hover { filter: brightness(1.06); }
 }

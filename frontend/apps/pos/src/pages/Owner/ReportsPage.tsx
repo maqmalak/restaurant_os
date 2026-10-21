@@ -4,7 +4,8 @@ import { useFrappeGetCall } from "frappe-react-sdk";
 import { Bar, BarChart, CartesianGrid, Legend, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
 import { BarChart3, ChefHat, Download, ExternalLink, Scale, Sparkles, Users } from "lucide-react";
 import { PageHeader } from "@/components/common/page-header";
-import { axis, downloadCsv, useViz, type Viz } from "@/components/viz/palette";
+import { axis, BAR_H, BAR_V, downloadCsv, useViz, type Viz } from "@/components/viz/palette";
+import { barDefs } from "@/components/viz/bar-defs";
 import { formatMoney } from "@/utils/currency";
 import { cn } from "@/utils/cn";
 import { Empty, Panel } from "./OwnerDashboardPage";
@@ -96,16 +97,18 @@ function SalesTab({ filters, group }: { filters: string; group: string }) {
           <ResponsiveContainer width="100%" height={timeLike ? 260 : Math.max(180, chartRows.length * 30 + 30)}>
             {timeLike ? (
               <BarChart data={chartRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barCategoryGap="20%">
+                {barDefs()}
                 <CartesianGrid stroke={v.grid} vertical={false} />
                 <XAxis dataKey="group" {...axis(v)} /><YAxis {...axis(v)} tickFormatter={short} width={44} />
                 <Tooltip formatter={(x: number) => formatMoney(x)} contentStyle={tip} cursor={{ fill: v.grid, opacity: 0.4 }} />
-                <Bar dataKey="net_sales" name="Net sales" fill={v.s1} radius={[4, 4, 0, 0]} maxBarSize={36} />
+                <Bar dataKey="net_sales" name="Net sales" fill={BAR_V} radius={[4, 4, 0, 0]} maxBarSize={36} />
               </BarChart>
             ) : (
               <BarChart data={chartRows} layout="vertical" margin={{ top: 4, right: 56, left: 8, bottom: 0 }} barCategoryGap={6}>
+                {barDefs()}
                 <XAxis type="number" hide /><YAxis type="category" dataKey="group" {...axis(v)} width={130} />
                 <Tooltip formatter={(x: number) => formatMoney(x)} contentStyle={tip} cursor={{ fill: v.grid, opacity: 0.4 }} />
-                <Bar dataKey="net_sales" name="Net sales" fill={v.s1} radius={[0, 4, 4, 0]} maxBarSize={18} label={{ position: "right", fill: v.muted, fontSize: 11, formatter: (x: number) => short(x) }} />
+                <Bar dataKey="net_sales" name="Net sales" fill={BAR_H} radius={[0, 4, 4, 0]} maxBarSize={18} label={{ position: "right", fill: v.muted, fontSize: 11, formatter: (x: number) => short(x) }} />
               </BarChart>
             )}
           </ResponsiveContainer>
@@ -137,12 +140,13 @@ function KitchenTab({ filters }: { filters: string }) {
         {d.stations.length === 0 ? <Empty text="No timed dishes in this period" /> : (
           <ResponsiveContainer width="100%" height={Math.max(160, d.stations.length * 34 + 50)}>
             <BarChart data={d.stations} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }} barCategoryGap={8}>
+              {barDefs()}
               <XAxis type="number" {...axis(v)} unit=" min" /><YAxis type="category" dataKey="station" {...axis(v)} width={130} />
               <Tooltip formatter={(x: number) => `${x.toFixed(1)} min`} contentStyle={tip} cursor={{ fill: v.grid, opacity: 0.4 }} />
               <Legend formatter={(nm) => <span style={{ color: v.muted }}>{nm}</span>} />
               <ReferenceLine x={d.red_minutes} stroke={v.neutral} strokeDasharray="4 4" label={{ value: "late", fill: v.muted, fontSize: 10, position: "top" }} />
               <Bar dataKey="wait" name="Waiting" stackId="t" fill={v.s2} maxBarSize={18} stroke="hsl(var(--card))" strokeWidth={2} />
-              <Bar dataKey="cook" name="Cooking" stackId="t" fill={v.s1} radius={[0, 4, 4, 0]} maxBarSize={18} stroke="hsl(var(--card))" strokeWidth={2} />
+              <Bar dataKey="cook" name="Cooking" stackId="t" fill={BAR_H} radius={[0, 4, 4, 0]} maxBarSize={18} stroke="hsl(var(--card))" strokeWidth={2} />
             </BarChart>
           </ResponsiveContainer>
         )}

@@ -665,7 +665,7 @@ function InstallAppBtn() {
   if (!canInstall) return null;
   return (
     <button type="button" onClick={() => void install().then((ok) => ok && toast.success("Restaurant OS POS installed — open it from your desktop or taskbar"))}
-      className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#d6993a] to-[#9a6216] px-3 text-xs font-bold text-white shadow-md shadow-teal-500/30 hover:brightness-110"
+      className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#3092df] to-[#1bafb4] px-3 text-xs font-bold text-white shadow-md shadow-teal-500/30 hover:brightness-110"
       title="Install Restaurant OS POS as a desktop app">
       <MonitorDown className="h-4 w-4" /><span className="hidden lg:inline">Install app</span>
     </button>

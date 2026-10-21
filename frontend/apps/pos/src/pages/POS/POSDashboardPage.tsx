@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { barDefs } from "@/components/viz/bar-defs";
+import { BAR_V } from "@/components/viz/palette";
 import { Link } from "react-router-dom";
 import { useFrappeGetCall } from "frappe-react-sdk";
 import { Area, Bar, BarChart, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -32,9 +34,9 @@ interface Dash {
 }
 
 // Validated categorical palette (dataviz reference): fixed order, never cycled; light / dark steps.
-// MicroMax gold first; order validated with the dataviz checker (adjacent pairs, light #fdfbf7 / dark #1d1813 cards).
-const CAT_LIGHT = ["#b8791f", "#2a78d6", "#1baf7a", "#eb6834", "#4a3aa7", "#e87ba4", "#008300", "#e34948"];
-const CAT_DARK = ["#c4862a", "#3987e5", "#199e70", "#d95926", "#9085e9", "#d55181", "#008300", "#e66767"];
+// MicroMax azure first, then gold; order validated with the dataviz checker (adjacent pairs, light #fdfbf7 / dark #1d1813 cards).
+const CAT_LIGHT = ["#2196cf", "#b8791f", "#1baf7a", "#eb6834", "#4a3aa7", "#e87ba4", "#008300", "#e34948"];
+const CAT_DARK = ["#2196cf", "#c4862a", "#199e70", "#d95926", "#9085e9", "#d55181", "#008300", "#e66767"];
 // Sequential gold ramp for the heatmap (light → dark).
 const SEQ = ["#fbf0dc", "#f5dcab", "#ecc277", "#dfa547", "#c4862a", "#9a6216", "#6b420c"];
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -83,7 +85,7 @@ export default function POSDashboardPage() {
           <p className="text-xs text-muted-foreground">{company}{d ? ` · ${fmtDay(d.range.from)} – ${fmtDay(d.range.to)} (${d.range.days} day${d.range.days > 1 ? "s" : ""}) vs ${fmtDay(d.range.prev_from)} – ${fmtDay(d.range.prev_to)}` : ""}</p>
         </div>
         <button type="button" onClick={() => void mutate()} className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-sm font-medium hover:bg-muted"><RefreshCw className={cn("h-4 w-4", isValidating && "animate-spin")} /> Refresh</button>
-        <Link to="/pos/terminal" className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#d6993a] to-[#9a6216] px-4 text-sm font-bold text-white shadow-lg shadow-primary/30 hover:brightness-110"><ShoppingCart className="h-4 w-4" /> Open terminal</Link>
+        <Link to="/pos/terminal" className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#3092df] to-[#1bafb4] px-4 text-sm font-bold text-white shadow-lg shadow-primary/30 hover:brightness-110"><ShoppingCart className="h-4 w-4" /> Open terminal</Link>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm">
@@ -176,11 +178,12 @@ export default function POSDashboardPage() {
             <Panel title="Busiest hours" sub={(() => { const pk = [...d.hourly].sort((a, b) => b.amount - a.amount)[0]; return pk ? `Peak at ${pad(pk.hour)}:00 — ${money(pk.amount)} from ${pk.count} bills` : "No sales in range"; })()}>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={Array.from({ length: 24 }, (_, h) => { const x = d.hourly.find((y) => y.hour === h); return { hour: pad(h), amount: x?.amount ?? 0, count: x?.count ?? 0 }; })} margin={{ left: 0, right: 8, top: 8 }}>
+                  {barDefs()}
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis dataKey="hour" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} stroke="hsl(var(--border))" interval={1} />
                   <YAxis tickFormatter={short} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} stroke="hsl(var(--border))" width={40} />
                   <Tooltip content={<ChartTip money={money} labels={{ amount: "Sales" }} suffix=":00" />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }} />
-                  <Bar dataKey="amount" fill={CAT[2]} radius={[4, 4, 0, 0]} maxBarSize={18} />
+                  <Bar dataKey="amount" fill={BAR_V} radius={[4, 4, 0, 0]} maxBarSize={18} />
                 </BarChart>
               </ResponsiveContainer>
             </Panel>

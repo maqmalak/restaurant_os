@@ -29,7 +29,7 @@ export function Logo({
       <Mark className="h-full w-auto" />
       <span className="leading-none">
         <span className={cn("block text-lg font-bold tracking-tight", onDark ? "text-white" : "text-foreground")}>
-          MicroMax<span className="text-primary"> POS</span>
+          MicroMax<span className="text-[#e3a33f]"> POS</span>
         </span>
         <span className={cn("mt-1 block text-[9px] font-semibold uppercase tracking-[0.2em]", onDark ? "text-white/60" : "text-muted-foreground")}>
           Restaurant OS

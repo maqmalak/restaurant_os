@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 
 /**
- * Chart colours — MicroMax gold first (validated with the dataviz checker against the warm card surfaces: light #fdfbf7,
- * dark #1d1813; all checks pass, adjacent pairs). Slot 3 (green) is below 3:1 on the light card → every chart ships a
- * table / direct labels.
+ * Chart colours — MicroMax azure first (bars draw it as the azure → teal gradient, see BarDefs), then gold and rose.
+ * Validated with the dataviz checker against the warm card surfaces (light #fdfbf7, dark #1d1813): all pairs pass.
  * Text never wears a series colour: axes and labels use the theme's muted / foreground ink.
  */
-const LIGHT = { s1: "#b8791f", s2: "#2a78d6", s3: "#1baf7a", neutral: "#a89b88", grid: "#ece4d6" };
-const DARK = { s1: "#c4862a", s2: "#3987e5", s3: "#199e70", neutral: "#7a6d5c", grid: "#2e261e" };
+const LIGHT = { s1: "#2196cf", s2: "#b8791f", s3: "#d0457a", neutral: "#a89b88", grid: "#ece4d6" };
+const DARK = { s1: "#2196cf", s2: "#c4862a", s3: "#d55181", neutral: "#7a6d5c", grid: "#2e261e" };
+
+/** The azure → teal gradient for bars (put <BarDefs /> inside a chart, then fill="url(#mx-bar-v)" or "url(#mx-bar-h)"). */
+export const BAR_V = "url(#mx-bar-v)";
+export const BAR_H = "url(#mx-bar-h)";
 
 export type Viz = typeof LIGHT & { ink: string; muted: string };
 
