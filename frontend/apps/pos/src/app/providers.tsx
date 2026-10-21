@@ -68,7 +68,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
         <CompanyProvider>
           {children}
           <Toaster
-            position="bottom-right"
+            // phones: at the top, so a message never covers the action buttons at the bottom (rider app, checkout)
+            position={typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches ? "top-center" : "bottom-right"}
             toastOptions={{
               duration: 4000,
               className:
