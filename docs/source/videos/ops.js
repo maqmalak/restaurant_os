@@ -225,7 +225,7 @@ OPS["08-kitchen-display"] = async () => {
   const r = await L.recording("08-kitchen-display", { who: "cashier" });
   const p = r.page;
   const o = await L.api(r, "restaurant_os.api.riders.new_delivery_order", { data: JSON.stringify({
-    customer_name: "Hamza Ali", phone: "03214567890", address: "House 21, Main Market, Gulberg II", lat: 31.517, lng: 74.351,
+    customer_name: "Hamza Ali", phone: "03214567890", address: "House 21, Peoples Colony No. 2, Faisalabad", lat: 31.4021, lng: 73.1180,
     items: [{ item_code: "Chicken Tikka", qty: 2 }, { item_code: "Fried Fish", qty: 1 }, { item_code: "Coke 345ml", qty: 2 }] }) });
   const no = await orderNo(r, o.order);
   await p.goto(`${L.BASE}/ros/kds`);
@@ -267,7 +267,7 @@ function riderCard(p, who, no) {      // a job is an <article>; skip the "new of
 }
 
 OPS["09-rider-app"] = async () => {
-  const r = await L.recording("09-rider-app", { who: "rider1", size: L.PHONE, geo: { latitude: 31.5204, longitude: 74.3587 } });
+  const r = await L.recording("09-rider-app", { who: "rider1", size: L.PHONE, geo: { latitude: 31.4067, longitude: 73.1135 } });
   const p = r.page;
   const o = (await L.staff("frappe.client.get_list", { doctype: "Restaurant Order", filters: JSON.stringify({ customer_name: "Hamza Ali", status: ["in", ["Ready", "Picked Up", "Out for Delivery"]] }),
     fields: JSON.stringify(["name", "order_no", "delivery_otp", "cod_amount"]), order_by: "creation desc", limit_page_length: 1 }, "GET"))[0];
@@ -311,7 +311,7 @@ OPS["10-dispatch-phone-order"] = async () => {
   await cap(p, "A customer calls to order", "", 600);
   await H.type(inputs.nth(0), "Sana Tariq");
   await H.type(inputs.nth(1), "03331234567");
-  await H.type(inputs.nth(2), "12-B, Liberty Market, Gulberg III");
+  await H.type(inputs.nth(2), "12-B, Madina Town, Faisalabad");
   await cap(p, "Pin the drop-off on the map", "Distance and ETA come from the pin", 900);
   const mini = d.locator(".leaflet-container").first();
   const box = await mini.boundingBox();
@@ -344,7 +344,7 @@ async function webAdd(p, name) {
 }
 
 OPS["11-online-order"] = async () => {
-  const r = await L.recording("11-online-order", { size: L.PHONE, geo: { latitude: 31.5125, longitude: 74.3445 } });
+  const r = await L.recording("11-online-order", { size: L.PHONE, geo: { latitude: 31.4025, longitude: 73.1190 } });
   const p = r.page;
   await p.goto(`${L.BASE}/ros/order`);
   await p.getByRole("button", { name: /Chicken Karahi/ }).first().waitFor();
@@ -363,7 +363,7 @@ OPS["11-online-order"] = async () => {
   await cap(p, "Checkout — the offer added a free Raita", "Delivery or pickup", 2200);
   await H.type(p.getByLabel(/Your name/), "Sara Khan");
   await H.type(p.getByLabel(/Mobile number/), "03119998877");
-  await H.type(p.getByLabel(/Delivery address/), "House 45, Liberty Market, Gulberg III");
+  await H.type(p.getByLabel(/Delivery address/), "House 45, Peoples Colony No. 2, Faisalabad");
   await H.click(p.getByRole("button", { name: /Use my location/ }), 1500);
   await cap(p, "Pinned by GPS — inside the delivery area", "", 1400);
   await H.type(p.getByPlaceholder("Promo code"), "WELCOME10");
@@ -453,7 +453,7 @@ OPS["14-foodpanda-order"] = async () => {
   const fp = await L.staffJson("restaurant_os.api.integrations.foodpanda_order", {
     order_id: `FP-VID-${Date.now().toString(36).toUpperCase()}`, expedition_type: "delivery",
     customer: { name: "Mehreen Q.", phone: "+92 321 7654321" },
-    address: { text: "House 9, Block D, Model Town, Lahore", latitude: 31.4835, longitude: 74.3252 },
+    address: { text: "House 9, Kohinoor City, Faisalabad", latitude: 31.4125, longitude: 73.1052 },
     products: [{ remote_code: "Chicken Seekh Kabab", quantity: 2, unit_price: 690 }, { remote_code: "French Fries", quantity: 1, unit_price: 390 }] });
   const no = fp.order_no;
   await p.waitForTimeout(4500);                              // the board refreshes (Socket.IO / polling)
@@ -669,6 +669,56 @@ OPS["20-close-shift-z-report"] = async () => {
   await L.shot(p, "20-done");
   await cap(p, "Closing shift posted — POS Invoices merged into Sales Invoices", "Z-report printed for the drawer", 3500);
   await L.endCard(p, "Shift closed");
+  return L.finish(r);
+};
+
+OPS["21-website-and-demo-request"] = async () => {
+  const r = await L.recording("21-website-and-demo-request");
+  const p = r.page;
+  await p.goto(`${L.BASE}/ros/`);
+  await p.getByText("one screen.").first().waitFor();
+  await L.titleCard(p, "MicroMax POS · Website", "Website visit & demo request", "What a restaurant owner sees: features, screens, pricing — and booking a demo");
+  await cap(p, "The public website", "Prices, plans and contact come from Restaurant → Website Settings", 3000);
+  const scrollTo = async (id, t, sub, ms = 3000) => { await p.evaluate((i) => document.getElementById(i)?.scrollIntoView({ behavior: "smooth" }), id); await p.waitForTimeout(1400); await cap(p, t, sub, ms); };
+  await scrollTo("features", "How it works", "Every step triggers the next automatically");
+  await scrollTo("modules", "Real product screens", "Kitchen display, customer display, kiosk, riders, dashboard");
+  for (let k = 0; k < 6; k++) { await p.mouse.wheel(0, 700); await p.waitForTimeout(700); }
+  await scrollTo("pricing", "Pricing in PKR, monthly or yearly", "", 1500);
+  await H.click(p.getByRole("button", { name: /^Monthly/ }), 1500);
+  await H.click(p.getByRole("button", { name: /^Yearly/ }), 1200);
+  await cap(p, "Yearly shows the 2 months free", "", 1500);
+  await scrollTo("faq", "Common questions", "", 800);
+  await H.click(p.getByRole("button", { name: /work when the internet goes down/ }), 2000);
+  await scrollTo("demo", "Book a free demo", "Each request becomes a Lead in ERPNext for the sales team", 1200);
+  const f = p.locator("#demo form");
+  await H.type(f.locator("input").nth(0), "Bilal Ahmed");
+  await H.type(f.locator("input").nth(1), "03001112233");
+  await H.type(f.locator("input").nth(2), "Cafe Lyallpur");
+  await H.type(f.locator("input").nth(3), "Faisalabad");
+  await H.click(f.getByRole("button", { name: /Book my free demo/ }), 2500);
+  await cap(p, "Sent — the sales team gets the Lead", "", 3000);
+  await L.endCard(p, "Website & demo request");
+  return L.finish(r);
+};
+
+OPS["22-invoice-lists"] = async () => {
+  const r = await L.recording("22-invoice-lists", { who: "manager" });
+  const p = r.page;
+  await p.goto(`${L.BASE}/ros/pos/invoices`);
+  await p.getByText("Net sales").first().waitFor(); await p.waitForTimeout(1500);
+  await L.titleCard(p, "Restaurant OS · Counter", "Invoice lists", "POS and Sales Invoices with totals, status tabs, search and day groups");
+  await cap(p, "Totals for whatever you filter", "Net sales, tax, still to collect, returns", 2800);
+  await H.click(p.getByRole("button", { name: /^Paid/ }), 1800);
+  await H.click(p.getByRole("button", { name: /^All/ }), 1200);
+  await cap(p, "Grouped by day: payment, FBR, cashier, status", "", 2600);
+  await p.goto(`${L.BASE}/ros/pos/sales`); await p.getByText("Net sales").first().waitFor(); await p.waitForTimeout(1200);
+  await cap(p, "Sales Invoices: deliveries, web, phone, Foodpanda, merged shifts", "", 2400);
+  await p.locator("select").filter({ has: p.locator("option", { hasText: "All channels" }) }).selectOption({ label: "Web" }); await p.waitForTimeout(1800);
+  await cap(p, "Filter by channel", "", 1500);
+  await H.click(p.getByRole("button", { name: /^Unpaid/ }).first().or(p.getByRole("button", { name: /^All/ })).first(), 1800);
+  await H.type(p.getByPlaceholder("Invoice or customer…"), "Test"); await p.waitForTimeout(1800);
+  await cap(p, "Search by invoice or customer", "Click a row to open the invoice", 2400);
+  await L.endCard(p, "Invoice lists");
   return L.finish(r);
 };
 
